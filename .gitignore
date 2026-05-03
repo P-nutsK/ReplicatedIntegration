@@ -1,5 +1,8 @@
 ### Gradle ###
 .gradle
+.gradle-user/
+.kotlin/
+**/.kotlin/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/**/build/
