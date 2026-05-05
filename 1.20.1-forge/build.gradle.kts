@@ -3,8 +3,6 @@ plugins {
     kotlin("jvm")
 }
 
-import org.gradle.api.tasks.compile.JavaCompile
-
 val mekanismVersion1_20_1: String by project
 val kotlinForForgeVersion1_20_1: String by project
 val emiVersion1_20_1: String by project
@@ -36,6 +34,6 @@ sourceSets.configureEach {
     kotlin.destinationDirectory.set(outputDir)
 }
 
-tasks.withType<JavaCompile>().configureEach {
+tasks.withType<org.gradle.api.tasks.compile.JavaCompile>().configureEach {
     dependsOn(tasks.named("processResources"))
 }
