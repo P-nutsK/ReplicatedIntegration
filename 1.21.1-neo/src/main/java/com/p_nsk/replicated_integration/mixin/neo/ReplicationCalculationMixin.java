@@ -2,6 +2,7 @@ package com.p_nsk.replicated_integration.mixin.neo;
 
 import com.buuz135.replication.calculation.MatterCompound;
 import com.buuz135.replication.calculation.ReplicationCalculation;
+import com.buuz135.replication.api.MatterCalculationStatus;
 import com.p_nsk.replicated_integration.Constants;
 import com.p_nsk.replicated_integration.addon.CalculationArtifacts;
 import com.p_nsk.replicated_integration.addon.NeoReplicationCalculationService;
@@ -26,6 +27,9 @@ public abstract class ReplicationCalculationMixin {
     @Shadow(remap = false)
     private static CompoundTag cachedSyncTag;
 
+    @Shadow(remap = false)
+    public static MatterCalculationStatus STATUS;
+
     @Inject(method = "calculateRecipes", at = @At("HEAD"), cancellable = true, remap = false)
     private static void replicatedIntegration$replaceCalculation(RegistryAccess registryAccess, CallbackInfo ci) {
         ci.cancel();
@@ -35,6 +39,7 @@ public abstract class ReplicationCalculationMixin {
         }
         Thread thread = new Thread(() -> {
             Constants.INSTANCE.getLOGGER().info("Replacing Replication calculateRecipes with replicated_integration addon pipeline");
+            STATUS = MatterCalculationStatus.NOT_CALCULATED;
             CalculationArtifacts artifacts = NeoReplicationCalculationService.INSTANCE.calculate();
             if (artifacts == null) {
                 Constants.INSTANCE.getLOGGER().warn("Replication addon calculation returned no artifacts");
@@ -42,6 +47,7 @@ public abstract class ReplicationCalculationMixin {
             }
             DEFAULT_MATTER_COMPOUND = artifacts.getCompounds();
             cachedSyncTag = artifacts.getSyncTag();
+            STATUS = MatterCalculationStatus.CALCULATED;
             Constants.INSTANCE.getLOGGER().info("Replication addon calculation applied {} exported compounds", DEFAULT_MATTER_COMPOUND.size());
             NeoReplicationCalculationService.INSTANCE.syncToPlayers(cachedSyncTag);
         }, "Replication-Integration");

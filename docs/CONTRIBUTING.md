@@ -10,7 +10,7 @@ type(scope): description
 
 ### Scope rules for subprojects
 
-Subprojects are the directories under `packages/` corresponding to each platform/version (such as `packages/26.1-fabric` or `packages/1.20.1-forge`). Their Gradle project paths still use the plain names like `:26.1-fabric`.
+Subprojects are the top-level directories corresponding to each platform/version (such as `26.1-fabric` or `1.20.1-forge`).
 
 | Changes affect...                            | Scope                                                                  |
 |----------------------------------------------|------------------------------------------------------------------------|

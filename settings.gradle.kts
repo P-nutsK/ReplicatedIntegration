@@ -17,7 +17,3 @@ rootProject.name = extra["modId"] as String
 include("common")
 include("1.20.1-forge")
 include("1.21.1-neo")
-
-project(":common").projectDir = file("packages/common")
-project(":1.20.1-forge").projectDir = file("packages/1.20.1-forge")
-project(":1.21.1-neo").projectDir = file("packages/1.21.1-neo")
