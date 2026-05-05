@@ -20,6 +20,7 @@ object ModMain {
         MinecraftForge.EVENT_BUS.register(ReplicationServerLifecycleHooks)
     }
 
+    @Suppress("DEPRECATION")
     private fun registerKotlinModEventListeners() {
         val extension: Any = ModLoadingContext.get().extension()
         val method = extension::class.java.getMethod("getKEventBus")

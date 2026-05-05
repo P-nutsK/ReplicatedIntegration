@@ -34,6 +34,6 @@ sourceSets.configureEach {
     kotlin.destinationDirectory.set(outputDir)
 }
 
-tasks.withType<org.gradle.api.tasks.compile.JavaCompile>().configureEach {
+tasks.withType<JavaCompile>().configureEach {
     dependsOn(tasks.named("processResources"))
 }

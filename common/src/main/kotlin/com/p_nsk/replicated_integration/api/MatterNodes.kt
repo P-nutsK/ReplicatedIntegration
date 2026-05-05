@@ -1,5 +1,5 @@
 package com.p_nsk.replicated_integration.api
-
+@Suppress("unused")
 object MatterNodes {
     @JvmField
     val ITEM = LiteResourceLocation.of("c", "item")
