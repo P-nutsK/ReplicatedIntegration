@@ -1,0 +1,20 @@
+{
+  "type": "replication:matter_value",
+  "input": {
+    "tag": "forge:ingots/iridium"
+  },
+  "matter": [
+    {
+      "type": "replication:metallic",
+      "value": 9.0
+    },
+    {
+      "type": "replication:quantum",
+      "value": 9.0
+    },
+    {
+      "type": "replication:precious",
+      "value": 9.0
+    }
+  ]
+}

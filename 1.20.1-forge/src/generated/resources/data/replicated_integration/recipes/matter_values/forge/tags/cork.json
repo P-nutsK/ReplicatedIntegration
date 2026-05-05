@@ -1,0 +1,12 @@
+{
+  "type": "replication:matter_value",
+  "input": {
+    "tag": "forge:cork"
+  },
+  "matter": [
+    {
+      "type": "replication:organic",
+      "value": 2.0
+    }
+  ]
+}

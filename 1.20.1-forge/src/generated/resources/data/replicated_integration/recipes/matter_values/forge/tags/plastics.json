@@ -1,0 +1,16 @@
+{
+  "type": "replication:matter_value",
+  "input": {
+    "tag": "forge:plastics"
+  },
+  "matter": [
+    {
+      "type": "replication:organic",
+      "value": 9.0
+    },
+    {
+      "type": "replication:precious",
+      "value": 2.0
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "type": "replication:matter_value",
+  "input": {
+    "tag": "forge:dusts/dark"
+  },
+  "matter": [
+    {
+      "type": "replication:precious",
+      "value": 12.0
+    }
+  ]
+}
