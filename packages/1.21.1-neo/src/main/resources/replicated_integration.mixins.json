@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.p_nsk.replicated_integration.mixin.neo",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ReplicationCalculationMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

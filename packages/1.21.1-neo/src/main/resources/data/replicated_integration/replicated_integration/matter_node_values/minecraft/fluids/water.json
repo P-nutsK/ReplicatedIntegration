@@ -1,0 +1,10 @@
+{
+  "type": "c:fluid",
+  "id": "minecraft:water",
+  "matter": [
+    {
+      "type": "replication:earth",
+      "value": 0.001
+    }
+  ]
+}
