@@ -3,7 +3,7 @@ package com.p_nsk.replicated_integration.command
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
-import com.p_nsk.replicated_integration.addon.ForgeReplicationCalculationService
+import com.p_nsk.replicated_integration.bridge.ForgeReplicationCalculationService
 import com.p_nsk.replicated_integration.api.*
 import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
 import net.minecraft.ChatFormatting
@@ -144,7 +144,7 @@ object MatterNodeDebugCommand {
         val prefix = " ".repeat(indent * 2)
         val label = MatterNodeFormatter.formatNode(node, ForgeReplicationCalculationService.nodeTypes())
         val solvedValue = solved[node]
-        val defaultValue = MatterNodeDebugCache.defaults(node)
+        val explicitValue = MatterNodeDebugCache.explicit(node)
         val conversions = graph.byOutputsNode[node].orEmpty()
 
         source.sendSuccess(
@@ -153,8 +153,16 @@ object MatterNodeDebugCommand {
                     .append(Component.literal(label).withStyle(ChatFormatting.AQUA))
                     .append(Component.literal(" solved=").withStyle(ChatFormatting.GRAY))
                     .append(Component.literal(solvedValue?.let(::formatCompound) ?: "<none>").withStyle(ChatFormatting.WHITE))
-                    .append(Component.literal(" default=").withStyle(ChatFormatting.GRAY))
-                    .append(Component.literal(defaultValue?.let(::formatCompound) ?: "<none>").withStyle(ChatFormatting.GOLD))
+                    .append(Component.literal(" explicit=").withStyle(ChatFormatting.GRAY))
+                    .append(
+                        Component.literal(
+                            when (explicitValue) {
+                                is ExplicitMatterValue.Deny -> "<denied>"
+                                is ExplicitMatterValue.Set -> formatCompound(explicitValue.compound)
+                                null -> "<none>"
+                            }
+                        ).withStyle(ChatFormatting.GOLD)
+                    )
                     .append(Component.literal(" incoming=${conversions.size}").withStyle(ChatFormatting.DARK_GRAY))
             },
             false,

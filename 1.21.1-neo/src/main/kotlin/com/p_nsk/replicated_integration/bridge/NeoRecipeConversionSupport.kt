@@ -1,4 +1,4 @@
-package com.p_nsk.replicated_integration.addon
+package com.p_nsk.replicated_integration.bridge
 
 import com.p_nsk.replicated_integration.api.IConversionSink
 import com.p_nsk.replicated_integration.api.LiteResourceLocation

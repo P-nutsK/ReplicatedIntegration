@@ -1,18 +1,21 @@
-package com.p_nsk.replicated_integration.addon
+package com.p_nsk.replicated_integration.adapter.vanilla
 
 import com.buuz135.replication.ReplicationRegistry
 import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.recipe.MatterValueRecipe
+import com.p_nsk.replicated_integration.api.ExplicitMatterSource
 import com.p_nsk.replicated_integration.api.IConversionSink
 import com.p_nsk.replicated_integration.api.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.MatterAmount
-import com.p_nsk.replicated_integration.api.MatterNodeKey
 import com.p_nsk.replicated_integration.api.MatterNodes
 import com.p_nsk.replicated_integration.api.MutableMatterDefaults
+import com.p_nsk.replicated_integration.api.MatterValueRecipeExtension
 import com.p_nsk.replicated_integration.api.RecipeConversionMapper
 import com.p_nsk.replicated_integration.api.ReplicationAddon
 import com.p_nsk.replicated_integration.api.ReplicationAddonEnvironment
+import com.p_nsk.replicated_integration.bridge.NeoRecipeConversionSupport
+import com.p_nsk.replicated_integration.bridge.NeoReplicationAddonContext
 import com.p_nsk.replicated_integration.data.MatterNodeValueReloadListener
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
@@ -60,29 +63,23 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
         defaults: MutableMatterDefaults,
     ) {
         for (holder in recipes) {
-            val compound = holder.value.matter.toLiteMatterCompound() ?: continue
             for (stack in holder.value.input.items) {
-                val node = stack.toItemNode() ?: continue
-                defaults.put(node, compound)
+                val node = BuiltinNodeResolver.itemNode(stack) ?: continue
+                if ((holder.value as MatterValueRecipeExtension).replicatedIntegrationIsDenied()) {
+                    defaults.deny(node, ExplicitMatterSource.DATAPACK)
+                    continue
+                }
+                val compound = holder.value.matter.toLiteMatterCompound() ?: continue
+                defaults.put(node, compound, ExplicitMatterSource.DATAPACK)
             }
         }
     }
 
     private fun Ingredient.toAlternativeMatterAmounts(): List<MatterAmount> =
-        NeoRecipeConversionSupport.ingredientToAlternativeMatterAmounts(this) { stack -> stack.toItemNode() }
+        NeoRecipeConversionSupport.ingredientToAlternativeMatterAmounts(this, BuiltinNodeResolver::itemNode)
 
-    private fun ItemStack.toItemNode(): MatterNodeKey? {
-        if (isEmpty) {
-            return null
-        }
-        val id = BuiltInRegistries.ITEM.getKey(item)
-        return MatterNodes.item(id.toLite())
-    }
-
-    private fun ItemStack.toItemMatterAmount(): MatterAmount? {
-        val node = toItemNode() ?: return null
-        return MatterAmount(node, count.coerceAtLeast(1).toLong())
-    }
+    private fun ItemStack.toItemMatterAmount(): MatterAmount? =
+        BuiltinNodeResolver.itemAmount(this)
 
     private fun List<MatterValue>.toLiteMatterCompound(): LiteMatterCompound? {
         if (isEmpty()) {
@@ -163,8 +160,8 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
                 }
                 val item = itemById(consume.node.id) ?: return@mapNotNull null
                 val remainder = item.craftingRemainingItem ?: return@mapNotNull null
-                val remainderId = BuiltInRegistries.ITEM.getKey(remainder)
-                MatterAmount(MatterNodes.item(remainderId.toLite()), consume.amount)
+                val remainderNode = BuiltinNodeResolver.itemNode(ItemStack(remainder)) ?: return@mapNotNull null
+                MatterAmount(remainderNode, consume.amount)
             }
             .groupBy { it.node }
             .map { (node, amounts) -> MatterAmount(node, amounts.sumOf { it.amount }) }

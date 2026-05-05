@@ -4,6 +4,9 @@
   "package": "com.p_nsk.replicated_integration.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "GenericSerializerMixin",
+    "MatterValueRecipeMixin",
+    "ReplicationCalculationInitMixin",
     "ReplicationCalculationMixin"
   ],
   "client": [

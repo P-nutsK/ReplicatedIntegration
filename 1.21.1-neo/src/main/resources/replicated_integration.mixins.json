@@ -4,6 +4,8 @@
   "package": "com.p_nsk.replicated_integration.mixin.neo",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "CodecRecipeSerializerMixin",
+    "MatterValueRecipeMixin",
     "ReplicationCalculationMixin"
   ],
   "injectors": {

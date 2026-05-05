@@ -2,10 +2,12 @@ package com.p_nsk.replicated_integration.mixin;
 
 import com.buuz135.replication.calculation.MatterCompound;
 import com.buuz135.replication.calculation.ReplicationCalculation;
-import com.p_nsk.replicated_integration.addon.CalculationArtifacts;
-import com.p_nsk.replicated_integration.addon.ForgeReplicationCalculationService;
+import com.p_nsk.replicated_integration.bridge.CalculationArtifacts;
+import com.p_nsk.replicated_integration.bridge.ForgeReplicationCalculationService;
 import com.p_nsk.replicated_integration.Constants;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,10 +32,19 @@ public abstract class ReplicationCalculationMixin {
                 Constants.INSTANCE.getLOGGER().warn("Replication addon calculation returned no artifacts");
                 return;
             }
-            DEFAULT_MATTER_COMPOUND = artifacts.getCompounds();
-            cachedSyncTag = artifacts.getSyncTag();
-            Constants.INSTANCE.getLOGGER().info("Replication addon calculation applied {} exported compounds", DEFAULT_MATTER_COMPOUND.size());
-            ForgeReplicationCalculationService.INSTANCE.syncToPlayers(cachedSyncTag);
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            Runnable applyArtifacts = () -> {
+                DEFAULT_MATTER_COMPOUND = artifacts.getCompounds();
+                // Suppress Replication's built-in login sync path; we resend safely ourselves.
+                cachedSyncTag = new CompoundTag();
+                Constants.INSTANCE.getLOGGER().info("Replication addon calculation applied {} exported compounds", DEFAULT_MATTER_COMPOUND.size());
+                ForgeReplicationCalculationService.INSTANCE.syncToPlayers(artifacts.getSyncTag());
+            };
+            if (server != null) {
+                server.execute(applyArtifacts);
+            } else {
+                applyArtifacts.run();
+            }
         }, "Replication-Integration");
         thread.setDaemon(true);
         thread.start();

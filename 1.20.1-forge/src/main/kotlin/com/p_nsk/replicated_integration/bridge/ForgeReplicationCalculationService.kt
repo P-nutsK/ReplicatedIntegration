@@ -1,14 +1,14 @@
-package com.p_nsk.replicated_integration.addon
+package com.p_nsk.replicated_integration.bridge
 
-import com.buuz135.replication.Replication
 import com.buuz135.replication.ReplicationRegistry
 import com.buuz135.replication.calculation.MatterCompound
 import com.buuz135.replication.calculation.MatterValue
-import com.buuz135.replication.calculation.ReplicationCalculation
-import com.buuz135.replication.packet.ReplicationCalculationPacket
 import com.buuz135.replication.recipe.MatterValueRecipe
+import com.p_nsk.replicated_integration.adapter.mekanism.ReplicationMekanismAddon
+import com.p_nsk.replicated_integration.adapter.vanilla.ReplicationVanillaAddon
 import com.p_nsk.replicated_integration.Constants
 import com.p_nsk.replicated_integration.api.ConversionGraphBuilder
+import com.p_nsk.replicated_integration.api.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.MatterNodes
@@ -16,18 +16,26 @@ import com.p_nsk.replicated_integration.api.MutableMatterDefaults
 import com.p_nsk.replicated_integration.api.ReplicationAddonRegistry
 import com.p_nsk.replicated_integration.api.SimpleConversionSolver
 import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
+import com.p_nsk.replicated_integration.data.ForgeMatterRuntimeOverrides
+import com.p_nsk.replicated_integration.network.ReplicationCalculationSyncChannel
+import com.p_nsk.replicated_integration.network.ReplicationCalculationSyncPacket
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerPlayer
-import net.minecraft.world.item.Item
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.crafting.RecipeHolder
-import net.neoforged.neoforge.server.ServerLifecycleHooks
+import net.minecraftforge.network.PacketDistributor
+import net.minecraftforge.server.ServerLifecycleHooks
 import java.util.HashMap
 import java.util.LinkedHashMap
 
-object NeoReplicationCalculationService {
+object ForgeReplicationCalculationService {
+    private const val MAX_SYNC_ENTRIES_PER_PACKET = 96
+
+    @Volatile
+    private var latestSyncTag: CompoundTag = CompoundTag()
+
+    @Volatile
+    private var latestSyncId: Long = 0L
+
     private val addons =
         ReplicationAddonRegistry(
             listOf(
@@ -39,12 +47,12 @@ object NeoReplicationCalculationService {
     fun calculate(): CalculationArtifacts? {
         val server = ServerLifecycleHooks.getCurrentServer() ?: return null
         val context =
-            NeoReplicationAddonContext(
+            ForgeReplicationAddonContext(
                 recipeManager = server.recipeManager,
                 registryAccess = server.registryAccess(),
-                defaultMatterRecipes = ReplicationCalculation.DEFAULT_MATTER_RECIPE.toList(),
+                defaultMatterRecipes = com.buuz135.replication.calculation.ReplicationCalculation.DEFAULT_MATTER_RECIPE.toList(),
             )
-        val activeAddons = addons.active(NeoReplicationAddonEnvironment)
+        val activeAddons = addons.active(ForgeReplicationAddonEnvironment)
         val defaults = MutableMatterDefaults()
         val builder = ConversionGraphBuilder()
 
@@ -58,32 +66,28 @@ object NeoReplicationCalculationService {
             addon.collectDefaults(context, defaults)
             addon.collectConversions(context, builder)
         }
+        defaults.putAll(ForgeMatterRuntimeOverrides.snapshot(server))
 
-        val defaultSnapshot = defaults.snapshot()
+        val explicitSnapshot = defaults.snapshot()
         val graph = builder.build()
         Constants.LOGGER.info(
             "Replication addon calculation collected {} default nodes and {} conversions",
-            defaultSnapshot.size,
+            explicitSnapshot.size,
             graph.conversions.size,
         )
 
-        val solved = SimpleConversionSolver().solve(graph, defaultSnapshot)
-        MatterNodeDebugCache.publish(defaultSnapshot, graph, solved)
+        val solved = SimpleConversionSolver().solve(graph, explicitSnapshot)
+        MatterNodeDebugCache.publish(explicitSnapshot, graph, solved)
 
-        val compounds = LinkedHashMap<Item, MatterCompound>()
-        val seededDefaults = seedDefaultCompounds(context.defaultMatterRecipes, compounds)
+        val compounds = LinkedHashMap<String, MatterCompound>()
         for ((node, compound) in solved.entries.sortedBy { it.key }) {
             if (node.type != MatterNodes.ITEM) {
                 continue
             }
             val exported = compound.toMatterCompound() ?: continue
-            val itemId = node.id.toMcResourceLocation()
-            val item = BuiltInRegistries.ITEM.get(itemId)
-            if (item == net.minecraft.world.item.Items.AIR) {
-                continue
-            }
-            val current = compounds[item]
-            compounds[item] =
+            val itemId = node.id.toString()
+            val current = compounds[itemId]
+            compounds[itemId] =
                 if (current == null) {
                     exported
                 } else {
@@ -92,15 +96,13 @@ object NeoReplicationCalculationService {
         }
 
         val tag = CompoundTag()
-        for ((item, compound) in compounds.entries.sortedBy { BuiltInRegistries.ITEM.getKey(it.key).toString() }) {
-            val itemId = BuiltInRegistries.ITEM.getKey(item)
-            tag.put(itemId.toString(), compound.serializeNBT(context.registryAccess))
+        for ((itemId, compound) in compounds.entries.sortedBy { it.key }) {
+            tag.put(itemId, compound.serializeNBT())
         }
 
         Constants.LOGGER.info(
-            "Replication addon calculation loaded {} default recipes, seeded {} default items, resolved {} node values and exported {} item matter compounds",
+            "Replication addon calculation loaded {} default recipes, resolved {} node values and exported {} item matter compounds",
             context.defaultMatterRecipes.size,
-            seededDefaults,
             solved.size,
             compounds.size,
         )
@@ -108,48 +110,51 @@ object NeoReplicationCalculationService {
     }
 
     fun syncToPlayers(tag: CompoundTag) {
+        latestSyncTag = tag.copy()
+        latestSyncId += 1L
         val server = ServerLifecycleHooks.getCurrentServer() ?: return
         for (player in server.playerList.players) {
             syncToPlayer(player, tag)
         }
     }
 
-    fun nodeTypes() = addons.nodeTypes()
-
-    private fun syncToPlayer(player: ServerPlayer, tag: CompoundTag) {
-        Replication.NETWORK.sendTo(ReplicationCalculationPacket(tag), player)
+    fun syncLatestToPlayer(player: ServerPlayer) {
+        if (latestSyncTag.isEmpty) {
+            return
+        }
+        syncToPlayer(player, latestSyncTag)
     }
 
+    private fun syncToPlayer(player: ServerPlayer, tag: CompoundTag) {
+        val syncId = latestSyncId
+        val chunks = splitSyncTag(tag)
+        Constants.LOGGER.info(
+            "Syncing replication calculation to {} in {} packet chunk(s)",
+            player.gameProfile.name,
+            chunks.size,
+        )
+        for ((index, chunk) in chunks.withIndex()) {
+            ReplicationCalculationSyncChannel.channel.send(
+                PacketDistributor.PLAYER.with { player },
+                ReplicationCalculationSyncPacket(
+                    syncId = syncId,
+                    complete = index == chunks.lastIndex,
+                    tag = chunk,
+                ),
+            )
+        }
+    }
+
+    fun nodeTypes() = addons.nodeTypes()
+
     private fun LiteMatterCompound.toMatterCompound(): MatterCompound? {
-        val registry = ReplicationRegistry.MATTER_TYPES_REGISTRY ?: return null
+        val registry = ReplicationRegistry.MATTER_TYPES_REGISTRY.get()
         val compound = MatterCompound()
         for ((matterId, amount) in values.entries.sortedBy { it.key.toString() }) {
-            val type = registry.get(matterId.toMcResourceLocation()) ?: continue
+            val type = registry.getValue(matterId.toMcResourceLocation()) ?: continue
             compound.add(MatterValue(type, amount))
         }
         return if (compound.values.isEmpty()) null else compound
-    }
-
-    private fun seedDefaultCompounds(
-        recipes: Collection<RecipeHolder<MatterValueRecipe>>,
-        compounds: MutableMap<Item, MatterCompound>,
-    ): Int {
-        var count = 0
-        for (holder in recipes) {
-            val compound = holder.value.toMatterCompound() ?: continue
-            for (stack in holder.value.input.items) {
-                val item = stack.item.takeUnless { stack.isEmpty || it == net.minecraft.world.item.Items.AIR } ?: continue
-                val current = compounds[item]
-                compounds[item] =
-                    if (current == null) {
-                        count++
-                        compound.copyOf()
-                    } else {
-                        compound.copyOf().compare(current)
-                    }
-            }
-        }
-        return count
     }
 
     private fun MatterValueRecipe.toMatterCompound(): MatterCompound? {
@@ -167,6 +172,29 @@ object NeoReplicationCalculationService {
             }
         }
 
-    private fun LiteResourceLocation.toMcResourceLocation(): ResourceLocation =
-        ResourceLocation.fromNamespaceAndPath(namespace, path)
+    private fun LiteResourceLocation.toMcResourceLocation() =
+        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(namespace, path)
+
+    private fun splitSyncTag(tag: CompoundTag): List<CompoundTag> {
+        if (tag.isEmpty) {
+            return listOf(CompoundTag())
+        }
+        val chunks = mutableListOf<CompoundTag>()
+        var current = CompoundTag()
+        var entries = 0
+        for (key in tag.allKeys.sorted()) {
+            val value = tag.get(key)?.copy() ?: continue
+            if (entries >= MAX_SYNC_ENTRIES_PER_PACKET) {
+                chunks += current
+                current = CompoundTag()
+                entries = 0
+            }
+            current.put(key, value)
+            entries += 1
+        }
+        if (!current.isEmpty) {
+            chunks += current
+        }
+        return chunks
+    }
 }

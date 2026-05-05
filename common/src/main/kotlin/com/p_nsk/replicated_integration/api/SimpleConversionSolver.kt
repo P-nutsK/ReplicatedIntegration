@@ -5,13 +5,22 @@ class SimpleConversionSolver(
 ) {
     fun solve(
         graph: ConversionGraph,
-        defaults: Map<MatterNodeKey, LiteMatterCompound>,
+        explicitValues: Map<MatterNodeKey, ExplicitMatterValue>,
     ): Map<MatterNodeKey, LiteMatterCompound> {
+        val denied = explicitValues
+            .filterValues { it is ExplicitMatterValue.Deny }
+            .keys
+        val pinned = explicitValues
+            .mapNotNull { (node, value) ->
+                (value as? ExplicitMatterValue.Set)?.let { node to it.compound }
+            }
+            .toMap()
+
         // We intentionally keep one best candidate per node instead of a full proof tree.
         // loopGuardKey is only meant to break obvious reversible loops such as Rotary, not to
         // turn this solver into a general path-search engine.
         val known =
-            defaults.mapValuesTo(linkedMapOf()) { (_, value) ->
+            pinned.mapValuesTo(linkedMapOf()) { (_, value) ->
                 SolvedCandidate(value)
             }
 
@@ -19,6 +28,12 @@ class SimpleConversionSolver(
             var changed = false
 
             for (conversion in graph.conversions) {
+                if (conversion.produces.node in denied || conversion.produces.node in pinned) {
+                    continue
+                }
+                if (conversion.consumes.any { it.node in denied } || conversion.credits.any { it.node in denied }) {
+                    continue
+                }
                 val consumedValue = evaluateConsumes(conversion, known) ?: continue
                 val creditedValue = applyCredits(consumedValue, conversion, known)
                 val produced = conversion.produces

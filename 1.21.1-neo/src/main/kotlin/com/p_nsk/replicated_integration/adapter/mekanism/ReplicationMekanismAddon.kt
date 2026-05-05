@@ -1,21 +1,22 @@
-package com.p_nsk.replicated_integration.addon
+package com.p_nsk.replicated_integration.adapter.mekanism
 
 import com.p_nsk.replicated_integration.api.IConversionSink
 import com.p_nsk.replicated_integration.api.ReplicationAddon
 import com.p_nsk.replicated_integration.api.ReplicationAddonEnvironment
+import com.p_nsk.replicated_integration.bridge.NeoReplicationAddonContext
 import net.minecraft.world.item.crafting.Recipe
+import net.minecraft.world.item.crafting.RecipeHolder
 
-object ReplicationMekanismAddon : ReplicationAddon<ForgeReplicationAddonContext> {
+object ReplicationMekanismAddon : ReplicationAddon<NeoReplicationAddonContext> {
     override val id: String = "mekanism"
 
     override fun isEnabled(environment: ReplicationAddonEnvironment): Boolean =
         environment.isModLoaded(id)
 
-    @Suppress("UNCHECKED_CAST")
-    override fun collectConversions(context: ForgeReplicationAddonContext, collector: IConversionSink) {
+    override fun collectConversions(context: NeoReplicationAddonContext, collector: IConversionSink) {
         for (recipe in context.recipeManager.recipes) {
             val mapper = MekanismRecipeMappers.all.firstOrNull { it.supports(recipe) } ?: continue
-            mapper.collect(recipe as Recipe<*>, collector)
+            mapper.collect(recipe as RecipeHolder<Recipe<*>>, collector)
         }
     }
 }

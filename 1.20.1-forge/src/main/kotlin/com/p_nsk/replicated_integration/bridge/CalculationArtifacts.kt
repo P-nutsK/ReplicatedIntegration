@@ -1,10 +1,9 @@
-package com.p_nsk.replicated_integration.addon
+package com.p_nsk.replicated_integration.bridge
 
 import com.buuz135.replication.calculation.MatterCompound
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.world.item.Item
 
 data class CalculationArtifacts(
     val syncTag: CompoundTag,
-    val compounds: HashMap<Item, MatterCompound>,
+    val compounds: HashMap<String, MatterCompound>,
 )

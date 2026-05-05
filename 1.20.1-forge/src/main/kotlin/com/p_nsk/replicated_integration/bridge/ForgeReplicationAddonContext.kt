@@ -1,12 +1,11 @@
-package com.p_nsk.replicated_integration.addon
+package com.p_nsk.replicated_integration.bridge
 
 import com.buuz135.replication.recipe.MatterValueRecipe
 import net.minecraft.core.RegistryAccess
-import net.minecraft.world.item.crafting.RecipeHolder
 import net.minecraft.world.item.crafting.RecipeManager
 
-data class NeoReplicationAddonContext(
+data class ForgeReplicationAddonContext(
     val recipeManager: RecipeManager,
     val registryAccess: RegistryAccess,
-    val defaultMatterRecipes: Collection<RecipeHolder<MatterValueRecipe>>,
+    val defaultMatterRecipes: List<MatterValueRecipe>,
 )

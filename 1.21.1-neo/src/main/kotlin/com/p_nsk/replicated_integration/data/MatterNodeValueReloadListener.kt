@@ -5,6 +5,8 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.p_nsk.replicated_integration.Constants
+import com.p_nsk.replicated_integration.api.ExplicitMatterSource
+import com.p_nsk.replicated_integration.api.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.MatterNodeKey
@@ -16,24 +18,24 @@ import net.minecraft.util.profiling.ProfilerFiller
 
 object MatterNodeValueReloadListener : SimpleJsonResourceReloadListener(Gson(), "replicated_integration/matter_node_values") {
     @Volatile
-    private var values: Map<MatterNodeKey, LiteMatterCompound> = emptyMap()
+    private var values: Map<MatterNodeKey, ExplicitMatterValue> = emptyMap()
 
-    fun snapshot(): Map<MatterNodeKey, LiteMatterCompound> = values
+    fun snapshot(): Map<MatterNodeKey, ExplicitMatterValue> = values
 
     override fun apply(
         objects: Map<ResourceLocation, JsonElement>,
         resourceManager: ResourceManager,
         profiler: ProfilerFiller,
     ) {
-        val parsed = linkedMapOf<MatterNodeKey, LiteMatterCompound>()
+        val parsed = linkedMapOf<MatterNodeKey, ExplicitMatterValue>()
 
         for ((fileId, jsonElement) in objects) {
             try {
                 val entry = parseEntry(fileId, GsonHelper.convertToJsonObject(jsonElement, "matter node value"))
                 val previous = parsed[entry.node]
                 parsed[entry.node] =
-                    if (previous == null || entry.compound.isBetterThan(previous)) {
-                        entry.compound
+                    if (previous == null || previous !is ExplicitMatterValue.Set || entry.compound.isBetterThan(previous.compound)) {
+                        ExplicitMatterValue.Set(entry.compound, ExplicitMatterSource.NODE_VALUE)
                     } else {
                         previous
                     }
