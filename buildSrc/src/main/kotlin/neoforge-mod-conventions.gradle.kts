@@ -18,7 +18,6 @@ val minecraftVersionRange: String by project
 val neoVersion: String by project
 val javaVersion: String by project
 
-val commonProject = ":$minecraftVersion-common"
 val sharedCommonProject = ":common"
 evaluationDependsOn(sharedCommonProject)
 val loaderVersionRange = project.properties["loaderVersionRange"]?.toString()
@@ -27,7 +26,7 @@ val parchmentMappingsVersion = project.properties["parchmentMappingsVersion"]?.t
 val neoDataRun = project.properties["neoDataRun"]?.toString() ?: "data"
 
 dependencies {
-    implementation(project(commonProject))
+    implementation(project(sharedCommonProject))
 }
 
 sourceSets.main.get().resources {
@@ -100,7 +99,6 @@ neoForge {
         create(modId) {
             sourceSet(sourceSets.main.get())
             sourceSet(project(sharedCommonProject).sourceSets.main.get())
-            sourceSet(project(commonProject).sourceSets.main.get())
         }
     }
 }
@@ -132,5 +130,4 @@ neoForge.ideSyncTask(generateModMetadata)
 
 tasks.jar {
     from(project(sharedCommonProject).sourceSets.main.get().output)
-    from(project(commonProject).sourceSets.main.get().output)
 }

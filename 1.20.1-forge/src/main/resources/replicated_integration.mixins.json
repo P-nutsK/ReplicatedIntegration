@@ -1,9 +1,11 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.p_nsk.replicated_integration.mixin.forge",
+  "package": "com.p_nsk.replicated_integration.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixins": [],
+  "mixins": [
+    "ReplicationCalculationMixin"
+  ],
   "client": [],
   "server": [],
   "injectors": {

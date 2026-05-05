@@ -1,8 +1,9 @@
 import org.gradle.plugins.ide.idea.model.IdeaModel
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.22" apply false
+    kotlin("jvm") version "2.3.0" apply false
     id("net.fabricmc.fabric-loom") apply false
     id("net.fabricmc.fabric-loom-remap") apply false
     id("net.neoforged.moddev") apply false
@@ -48,17 +49,17 @@ subprojects {
             }
         }
 
-//        exclusiveContent {
-//            forRepository {
-//                maven {
-//                    name = "Modrinth"
-//                    url = uri("https://api.modrinth.com/maven")
-//                }
-//            }
-//            filter {
-//                includeGroup("maven.modrinth")
-//            }
-//        }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "Modrinth"
+                    url = uri("https://api.modrinth.com/maven")
+                }
+            }
+            filter {
+                includeGroup("maven.modrinth")
+            }
+        }
 
         maven {
             name = "ParchmentMC"
@@ -74,6 +75,14 @@ subprojects {
             name = "Kotlin for Forge"
             url = uri("https://thedarkcolour.github.io/KotlinForForge/")
         }
+
+        maven {
+            name = "Curse Maven"
+            url = uri("https://cursemaven.com")
+            content {
+                includeGroup("curse.maven")
+            }
+        }
     }
 
     tasks.withType<JavaCompile>().configureEach {
@@ -87,9 +96,9 @@ subprojects {
 
     tasks.withType<KotlinCompile>().configureEach {
         val kotlinJvmTarget = project.findProperty("javaVersion")?.toString() ?: "17"
-        kotlinOptions {
-            jvmTarget = kotlinJvmTarget
-            freeCompilerArgs = freeCompilerArgs + "-Xjvm-default=all"
+        compilerOptions {
+            jvmTarget.set(JvmTarget.fromTarget(kotlinJvmTarget))
+            freeCompilerArgs.add("-Xjvm-default=all")
         }
     }
 

@@ -24,10 +24,17 @@ val parchmentMappingsVersion: String by project
 val forgeFullVersion = "$minecraftVersion-$forgeVersion"
 val commonProject = ":$minecraftVersion-common"
 val sharedCommonProject = ":common"
+val versionCommonProject = findProject(commonProject)
 evaluationDependsOn(sharedCommonProject)
+if (versionCommonProject != null) {
+    evaluationDependsOn(commonProject)
+}
 
 dependencies {
-    implementation(project(commonProject))
+    implementation(project(sharedCommonProject))
+    if (versionCommonProject != null) {
+        implementation(project(commonProject))
+    }
     annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
 }
 
@@ -99,7 +106,9 @@ legacyForge {
         create(modId) {
             sourceSet(sourceSets.main.get())
             sourceSet(project(sharedCommonProject).sourceSets.main.get())
-            sourceSet(project(commonProject).sourceSets.main.get())
+            if (versionCommonProject != null) {
+                sourceSet(project(commonProject).sourceSets.main.get())
+            }
         }
     }
 }
@@ -156,6 +165,8 @@ legacyForge.ideSyncTask(generateModMetadata)
 
 tasks.jar {
     from(project(sharedCommonProject).sourceSets.main.get().output)
-    from(project(commonProject).sourceSets.main.get().output)
+    if (versionCommonProject != null) {
+        from(project(commonProject).sourceSets.main.get().output)
+    }
     manifest.attributes(mapOf("MixinConfigs" to "$modId.mixins.json"))
 }
