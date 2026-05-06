@@ -8,15 +8,19 @@ import com.p_nsk.replicated_integration.api.IConversionSink
 import com.p_nsk.replicated_integration.api.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.MatterAmount
+import com.p_nsk.replicated_integration.api.MatterNodeKey
 import com.p_nsk.replicated_integration.api.MatterNodes
 import com.p_nsk.replicated_integration.api.MutableMatterDefaults
-import com.p_nsk.replicated_integration.api.MatterValueRecipeExtension
+import com.p_nsk.replicated_integration.api.MutableMatterSelectors
 import com.p_nsk.replicated_integration.api.RecipeConversionMapper
 import com.p_nsk.replicated_integration.api.ReplicationAddon
 import com.p_nsk.replicated_integration.api.ReplicationAddonEnvironment
+import com.p_nsk.replicated_integration.api.MatterSelectorKey
+import com.p_nsk.replicated_integration.api.MatterSelectorKind
 import com.p_nsk.replicated_integration.bridge.NeoRecipeConversionSupport
 import com.p_nsk.replicated_integration.bridge.NeoReplicationAddonContext
 import com.p_nsk.replicated_integration.data.MatterNodeValueReloadListener
+import com.p_nsk.replicated_integration.recipe.replicatedIntegrationDenied
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.Item
@@ -38,8 +42,11 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
     override fun isEnabled(environment: ReplicationAddonEnvironment): Boolean = true
 
     override fun collectDefaults(context: NeoReplicationAddonContext, defaults: MutableMatterDefaults) {
-        importDefaults(context.defaultMatterRecipes, defaults)
         defaults.putAll(MatterNodeValueReloadListener.snapshot())
+    }
+
+    override fun collectSelectors(context: NeoReplicationAddonContext, selectors: MutableMatterSelectors) {
+        importDefaults(context.defaultMatterRecipes, selectors)
     }
 
     override fun collectConversions(context: NeoReplicationAddonContext, collector: IConversionSink) {
@@ -60,17 +67,27 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
 
     private fun importDefaults(
         recipes: Collection<RecipeHolder<MatterValueRecipe>>,
-        defaults: MutableMatterDefaults,
+        selectors: MutableMatterSelectors,
     ) {
         for (holder in recipes) {
-            for (stack in holder.value.input.items) {
-                val node = BuiltinNodeResolver.itemNode(stack) ?: continue
-                if ((holder.value as MatterValueRecipeExtension).replicatedIntegrationIsDenied()) {
-                    defaults.deny(node, ExplicitMatterSource.DATAPACK)
+            val explicitSelector = holder.value.input.explicitDefaultSelectorOrNull()
+            if (explicitSelector != null) {
+                if (holder.value.replicatedIntegrationDenied) {
+                    selectors.deny(explicitSelector, ExplicitMatterSource.DATAPACK)
                     continue
                 }
                 val compound = holder.value.matter.toLiteMatterCompound() ?: continue
-                defaults.put(node, compound, ExplicitMatterSource.DATAPACK)
+                selectors.put(explicitSelector, compound, ExplicitMatterSource.DATAPACK)
+                continue
+            }
+            for (stack in holder.value.input.items) {
+                val itemNode = BuiltinNodeResolver.itemNode(stack) ?: continue
+                if (holder.value.replicatedIntegrationDenied) {
+                    selectors.deny(MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id), ExplicitMatterSource.DATAPACK)
+                    continue
+                }
+                val compound = holder.value.matter.toLiteMatterCompound() ?: continue
+                selectors.put(MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id), compound, ExplicitMatterSource.DATAPACK)
             }
         }
     }
@@ -131,6 +148,19 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
                 ConversionInputs(holder.id, listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
             },
         )
+
+    private fun Ingredient.explicitDefaultSelectorOrNull() =
+        explicitDefaultTagSelectorOrNull() ?: explicitDefaultItemSelectorOrNull()
+
+    private fun Ingredient.explicitDefaultItemSelectorOrNull() =
+        if (isCustom || values.size != 1) null else (values.singleOrNull() as? Ingredient.ItemValue)?.item()?.let { stack ->
+            MatterSelectorKey(MatterSelectorKind.NODE, MatterNodes.ITEM, NeoRecipeConversionSupport.run { BuiltInRegistries.ITEM.getKey(stack.item).toLite() })
+        }
+
+    private fun Ingredient.explicitDefaultTagSelectorOrNull() =
+        if (isCustom || values.size != 1) null else (values.singleOrNull() as? Ingredient.TagValue)?.tag()?.location()?.let { tagId ->
+            MatterSelectorKey(MatterSelectorKind.TAG, MatterNodes.ITEM, NeoRecipeConversionSupport.run { tagId.toLite() })
+        }
 
     private inline fun <reified R : Recipe<*>> singleOutputMapper(
         context: NeoReplicationAddonContext,

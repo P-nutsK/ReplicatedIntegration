@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "GenericSerializerMixin",
+    "IngredientAccessor",
     "MatterValueRecipeMixin",
     "ReplicationCalculationInitMixin",
     "ReplicationCalculationMixin"

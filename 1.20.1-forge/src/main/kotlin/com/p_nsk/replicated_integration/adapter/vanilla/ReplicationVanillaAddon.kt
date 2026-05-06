@@ -3,19 +3,23 @@ package com.p_nsk.replicated_integration.adapter.vanilla
 import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.recipe.MatterValueRecipe
 import com.p_nsk.replicated_integration.api.ExplicitMatterSource
-import com.p_nsk.replicated_integration.api.MatterValueRecipeExtension
 import com.p_nsk.replicated_integration.api.IConversionSink
 import com.p_nsk.replicated_integration.api.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.MatterAmount
+import com.p_nsk.replicated_integration.api.MatterNodeKey
 import com.p_nsk.replicated_integration.api.MatterNodes
 import com.p_nsk.replicated_integration.api.MutableMatterDefaults
+import com.p_nsk.replicated_integration.api.MutableMatterSelectors
 import com.p_nsk.replicated_integration.api.RecipeConversionMapper
 import com.p_nsk.replicated_integration.api.ReplicationAddon
 import com.p_nsk.replicated_integration.api.ReplicationAddonEnvironment
+import com.p_nsk.replicated_integration.api.MatterSelectorKey
+import com.p_nsk.replicated_integration.api.MatterSelectorKind
 import com.p_nsk.replicated_integration.bridge.ForgeRecipeConversionSupport
 import com.p_nsk.replicated_integration.bridge.ForgeReplicationAddonContext
 import com.p_nsk.replicated_integration.data.MatterNodeValueReloadListener
+import com.p_nsk.replicated_integration.mixin.IngredientAccessor
 import com.p_nsk.replicated_integration.recipe.replicatedIntegrationDenied
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
@@ -37,8 +41,11 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
     override fun isEnabled(environment: ReplicationAddonEnvironment): Boolean = true
 
     override fun collectDefaults(context: ForgeReplicationAddonContext, defaults: MutableMatterDefaults) {
-        importDefaults(context.defaultMatterRecipes, defaults)
         defaults.putAll(MatterNodeValueReloadListener.snapshot())
+    }
+
+    override fun collectSelectors(context: ForgeReplicationAddonContext, selectors: MutableMatterSelectors) {
+        importDefaults(context.defaultMatterRecipes, selectors)
     }
 
     override fun collectConversions(context: ForgeReplicationAddonContext, collector: IConversionSink) {
@@ -59,17 +66,27 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
 
     private fun importDefaults(
         recipes: List<MatterValueRecipe>,
-        defaults: MutableMatterDefaults,
+        selectors: MutableMatterSelectors,
     ) {
         for (recipe in recipes) {
-            for (stack in recipe.input.items) {
-                val node = BuiltinNodeResolver.itemNode(stack) ?: continue
+            val explicitSelector = recipe.input.explicitDefaultSelectorOrNull()
+            if (explicitSelector != null) {
                 if (recipe.replicatedIntegrationDenied) {
-                    defaults.deny(node, ExplicitMatterSource.DATAPACK)
+                    selectors.deny(explicitSelector, ExplicitMatterSource.DATAPACK)
                     continue
                 }
                 val compound = recipe.matter.toLiteMatterCompound() ?: continue
-                defaults.put(node, compound, ExplicitMatterSource.DATAPACK)
+                selectors.put(explicitSelector, compound, ExplicitMatterSource.DATAPACK)
+                continue
+            }
+            for (stack in recipe.input.items) {
+                val itemNode = BuiltinNodeResolver.itemNode(stack) ?: continue
+                if (recipe.replicatedIntegrationDenied) {
+                    selectors.deny(MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id), ExplicitMatterSource.DATAPACK)
+                    continue
+                }
+                val compound = recipe.matter.toLiteMatterCompound() ?: continue
+                selectors.put(MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id), compound, ExplicitMatterSource.DATAPACK)
             }
         }
     }
@@ -130,6 +147,29 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
                 ConversionInputs(recipe.id, listOf(recipe.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
             },
         )
+
+    private fun Ingredient.explicitDefaultSelectorOrNull() =
+        explicitDefaultTagSelectorOrNull() ?: explicitDefaultItemSelectorOrNull()
+
+    private fun Ingredient.explicitDefaultItemSelectorOrNull() =
+        ((this as IngredientAccessor).`replicated_integration$getValues`().singleOrNull() as? Ingredient.ItemValue)
+            ?.serialize()
+            ?.getAsJsonPrimitive("item")
+            ?.asString
+            ?.let(ResourceLocation::parse)
+            ?.let { itemId ->
+                MatterSelectorKey(MatterSelectorKind.NODE, MatterNodes.ITEM, ForgeRecipeConversionSupport.run { itemId.toLite() })
+            }
+
+    private fun Ingredient.explicitDefaultTagSelectorOrNull() =
+        ((this as IngredientAccessor).`replicated_integration$getValues`().singleOrNull() as? Ingredient.TagValue)
+            ?.serialize()
+            ?.getAsJsonPrimitive("tag")
+            ?.asString
+            ?.let(ResourceLocation::parse)
+            ?.let { tagId ->
+                MatterSelectorKey(MatterSelectorKind.TAG, MatterNodes.ITEM, ForgeRecipeConversionSupport.run { tagId.toLite() })
+            }
 
     private inline fun <reified R : Recipe<*>> singleOutputMapper(
         context: ForgeReplicationAddonContext,

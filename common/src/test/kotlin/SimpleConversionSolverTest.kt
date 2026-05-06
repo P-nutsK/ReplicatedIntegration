@@ -33,7 +33,7 @@ class SimpleConversionSolverTest {
         val wood = LiteResourceLocation.of("replication", "wood")
 
         val defaults = mapOf(
-            oakLog to LiteMatterCompound.single(wood, 32.0),
+            oakLog to ExplicitMatterValue.Set(LiteMatterCompound.single(wood, 32.0), ExplicitMatterSource.DATAPACK),
         )
 
         val solved = SimpleConversionSolver().solve(graph, defaults)
@@ -63,10 +63,10 @@ class SimpleConversionSolverTest {
         val solved =
             SimpleConversionSolver().solve(
                 graph = builder.build(),
-                defaults =
+                explicitValues =
                     mapOf(
-                        water to LiteMatterCompound.single(earth, 10.0),
-                        oxygen to LiteMatterCompound.single(earth, 6.0),
+                        water to ExplicitMatterValue.Set(LiteMatterCompound.single(earth, 10.0), ExplicitMatterSource.DATAPACK),
+                        oxygen to ExplicitMatterValue.Set(LiteMatterCompound.single(earth, 6.0), ExplicitMatterSource.DATAPACK),
                     ),
             )
 
@@ -109,14 +109,60 @@ class SimpleConversionSolverTest {
         val solved =
             SimpleConversionSolver().solve(
                 graph = builder.build(),
-                defaults =
+                explicitValues =
                     mapOf(
-                        steam to LiteMatterCompound.single(matter, 10.0),
+                        steam to ExplicitMatterValue.Set(LiteMatterCompound.single(matter, 10.0), ExplicitMatterSource.DATAPACK),
                     ),
             )
 
         assertEquals(10.0, solved[steam]!!.values[matter])
         assertEquals(10.0, solved[water]!!.values[matter])
         assertEquals(10.0, solved[metallicSteam]!!.values[matter])
+    }
+
+    @Test
+    fun selectorMaterializerExpandsTagSelectorsIntoConcreteNodes() {
+        val oakLog = MatterNodes.item(LiteResourceLocation.of("minecraft", "oak_log"))
+        val oakWood = MatterNodes.item(LiteResourceLocation.of("minecraft", "oak_wood"))
+        val earth = LiteResourceLocation.of("replication", "earth")
+        val logsSelector = MatterSelectorKey(MatterSelectorKind.TAG, MatterNodes.ITEM, LiteResourceLocation.of("minecraft", "oak_logs"))
+
+        val materialized =
+            MatterSelectorMaterializer.materialize(
+                selectors =
+                    mapOf(
+                        logsSelector to ExplicitMatterValue.Set(LiteMatterCompound.single(earth, 20000.0), ExplicitMatterSource.DATAPACK),
+                    ),
+                expandTag = { type, id ->
+                    if (type == MatterNodes.ITEM && id == LiteResourceLocation.of("minecraft", "oak_logs")) {
+                        listOf(oakLog, oakWood)
+                    } else {
+                        emptyList()
+                    }
+                },
+            )
+
+        assertEquals(20000.0, (materialized[oakLog] as ExplicitMatterValue.Set).compound.values[earth])
+        assertEquals(20000.0, (materialized[oakWood] as ExplicitMatterValue.Set).compound.values[earth])
+    }
+
+    @Test
+    fun selectorMaterializerPrefersConcreteSelectorsOverTagsAtSameSource() {
+        val oakLog = MatterNodes.item(LiteResourceLocation.of("minecraft", "oak_log"))
+        val earth = LiteResourceLocation.of("replication", "earth")
+
+        val materialized =
+            MatterSelectorMaterializer.materialize(
+                selectors =
+                    mapOf(
+                        MatterSelectorKey(MatterSelectorKind.TAG, MatterNodes.ITEM, LiteResourceLocation.of("minecraft", "oak_logs")) to
+                            ExplicitMatterValue.Deny(ExplicitMatterSource.RUNTIME),
+                        MatterSelectorKey(MatterSelectorKind.NODE, MatterNodes.ITEM, LiteResourceLocation.of("minecraft", "oak_log")) to
+                            ExplicitMatterValue.Set(LiteMatterCompound.single(earth, 20.0), ExplicitMatterSource.RUNTIME),
+                    ),
+                expandTag = { _, _ -> listOf(oakLog) },
+            )
+
+        assertEquals(20.0, (materialized[oakLog] as ExplicitMatterValue.Set).compound.values[earth])
     }
 }

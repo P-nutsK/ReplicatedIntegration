@@ -6,7 +6,6 @@ import com.mojang.serialization.Codec
 import com.mojang.serialization.DataResult
 import com.mojang.serialization.MapCodec
 import com.mojang.serialization.codecs.RecordCodecBuilder
-import com.p_nsk.replicated_integration.api.MatterValueRecipeExtension
 import net.minecraft.world.item.crafting.Ingredient
 import java.util.Optional
 
@@ -38,12 +37,12 @@ object NeoMatterValueRecipeCodec {
             return DataResult.error { "matter must not be empty" }
         }
         val recipe = MatterValueRecipe(raw.input, matter)
-        (recipe as MatterValueRecipeExtension).replicatedIntegrationSetDenied(raw.deny)
+        recipe.replicatedIntegrationDenied = raw.deny
         return DataResult.success(recipe)
     }
 
     private fun encode(recipe: MatterValueRecipe): DataResult<RawRecipe> {
-        val denied = (recipe as MatterValueRecipeExtension).replicatedIntegrationIsDenied()
+        val denied = recipe.replicatedIntegrationDenied
         val matter = if (denied) Optional.empty() else Optional.of(recipe.matter)
         if (!denied && recipe.matter.isEmpty()) {
             return DataResult.error { "matter must not be empty" }

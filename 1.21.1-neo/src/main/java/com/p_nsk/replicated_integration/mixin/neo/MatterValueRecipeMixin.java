@@ -11,12 +11,12 @@ public abstract class MatterValueRecipeMixin implements MatterValueRecipeExtensi
     private boolean replicatedIntegration$deny;
 
     @Override
-    public boolean replicatedIntegrationIsDenied() {
+    public boolean replicated_integration$isDenied() {
         return replicatedIntegration$deny;
     }
 
     @Override
-    public void replicatedIntegrationSetDenied(boolean denied) {
+    public void replicated_integration$setDenied(boolean denied) {
         this.replicatedIntegration$deny = denied;
     }
 }

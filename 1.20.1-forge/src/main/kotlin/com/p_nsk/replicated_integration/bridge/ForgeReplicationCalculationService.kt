@@ -5,17 +5,21 @@ import com.buuz135.replication.calculation.MatterCompound
 import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.recipe.MatterValueRecipe
 import com.p_nsk.replicated_integration.adapter.mekanism.ReplicationMekanismAddon
+import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
 import com.p_nsk.replicated_integration.adapter.vanilla.ReplicationVanillaAddon
 import com.p_nsk.replicated_integration.Constants
 import com.p_nsk.replicated_integration.api.ConversionGraphBuilder
-import com.p_nsk.replicated_integration.api.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.LiteResourceLocation
+import com.p_nsk.replicated_integration.api.MatterNodeKey
 import com.p_nsk.replicated_integration.api.MatterNodes
 import com.p_nsk.replicated_integration.api.MutableMatterDefaults
+import com.p_nsk.replicated_integration.api.MutableMatterSelectors
+import com.p_nsk.replicated_integration.api.MatterSelectorMaterializer
 import com.p_nsk.replicated_integration.api.ReplicationAddonRegistry
 import com.p_nsk.replicated_integration.api.SimpleConversionSolver
 import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
+import com.p_nsk.replicated_integration.data.ForgeMatterConfigOverrides
 import com.p_nsk.replicated_integration.data.ForgeMatterRuntimeOverrides
 import com.p_nsk.replicated_integration.network.ReplicationCalculationSyncChannel
 import com.p_nsk.replicated_integration.network.ReplicationCalculationSyncPacket
@@ -54,6 +58,7 @@ object ForgeReplicationCalculationService {
             )
         val activeAddons = addons.active(ForgeReplicationAddonEnvironment)
         val defaults = MutableMatterDefaults()
+        val selectors = MutableMatterSelectors()
         val builder = ConversionGraphBuilder()
 
         Constants.LOGGER.info(
@@ -64,11 +69,17 @@ object ForgeReplicationCalculationService {
 
         for (addon in activeAddons) {
             addon.collectDefaults(context, defaults)
+            addon.collectSelectors(context, selectors)
+        }
+        selectors.putAll(ForgeMatterConfigOverrides.snapshot())
+        selectors.putAll(ForgeMatterRuntimeOverrides.snapshot(server))
+
+        val selectorSnapshot = selectors.snapshot()
+        defaults.putAll(MatterSelectorMaterializer.materialize(selectorSnapshot, ::expandSelectorTag))
+        val explicitSnapshot = defaults.snapshot()
+        for (addon in activeAddons) {
             addon.collectConversions(context, builder)
         }
-        defaults.putAll(ForgeMatterRuntimeOverrides.snapshot(server))
-
-        val explicitSnapshot = defaults.snapshot()
         val graph = builder.build()
         Constants.LOGGER.info(
             "Replication addon calculation collected {} default nodes and {} conversions",
@@ -77,7 +88,7 @@ object ForgeReplicationCalculationService {
         )
 
         val solved = SimpleConversionSolver().solve(graph, explicitSnapshot)
-        MatterNodeDebugCache.publish(explicitSnapshot, graph, solved)
+        MatterNodeDebugCache.publish(selectorSnapshot, explicitSnapshot, graph, solved)
 
         val compounds = LinkedHashMap<String, MatterCompound>()
         for ((node, compound) in solved.entries.sortedBy { it.key }) {
@@ -146,6 +157,15 @@ object ForgeReplicationCalculationService {
     }
 
     fun nodeTypes() = addons.nodeTypes()
+
+    private fun expandSelectorTag(type: LiteResourceLocation, id: LiteResourceLocation): Iterable<MatterNodeKey> {
+        val resourceId = id.toMcResourceLocation()
+        return when (type) {
+            MatterNodes.ITEM -> BuiltinNodeResolver.itemNodesInTag(resourceId)
+            MatterNodes.FLUID -> BuiltinNodeResolver.fluidNodesInTag(resourceId)
+            else -> emptyList()
+        }
+    }
 
     private fun LiteMatterCompound.toMatterCompound(): MatterCompound? {
         val registry = ReplicationRegistry.MATTER_TYPES_REGISTRY.get()

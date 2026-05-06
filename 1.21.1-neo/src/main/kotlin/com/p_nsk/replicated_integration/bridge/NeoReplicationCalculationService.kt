@@ -8,17 +8,21 @@ import com.buuz135.replication.calculation.ReplicationCalculation
 import com.buuz135.replication.packet.ReplicationCalculationPacket
 import com.buuz135.replication.recipe.MatterValueRecipe
 import com.p_nsk.replicated_integration.adapter.mekanism.ReplicationMekanismAddon
+import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
 import com.p_nsk.replicated_integration.adapter.vanilla.ReplicationVanillaAddon
 import com.p_nsk.replicated_integration.Constants
 import com.p_nsk.replicated_integration.api.ConversionGraphBuilder
-import com.p_nsk.replicated_integration.api.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.LiteResourceLocation
+import com.p_nsk.replicated_integration.api.MatterNodeKey
 import com.p_nsk.replicated_integration.api.MatterNodes
 import com.p_nsk.replicated_integration.api.MutableMatterDefaults
+import com.p_nsk.replicated_integration.api.MutableMatterSelectors
+import com.p_nsk.replicated_integration.api.MatterSelectorMaterializer
 import com.p_nsk.replicated_integration.api.ReplicationAddonRegistry
 import com.p_nsk.replicated_integration.api.SimpleConversionSolver
 import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
+import com.p_nsk.replicated_integration.data.NeoMatterConfigOverrides
 import com.p_nsk.replicated_integration.data.NeoMatterRuntimeOverrides
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.nbt.CompoundTag
@@ -49,6 +53,7 @@ object NeoReplicationCalculationService {
             )
         val activeAddons = addons.active(NeoReplicationAddonEnvironment)
         val defaults = MutableMatterDefaults()
+        val selectors = MutableMatterSelectors()
         val builder = ConversionGraphBuilder()
 
         Constants.LOGGER.info(
@@ -59,11 +64,17 @@ object NeoReplicationCalculationService {
 
         for (addon in activeAddons) {
             addon.collectDefaults(context, defaults)
+            addon.collectSelectors(context, selectors)
+        }
+        selectors.putAll(NeoMatterConfigOverrides.snapshot())
+        selectors.putAll(NeoMatterRuntimeOverrides.snapshot(server))
+
+        val selectorSnapshot = selectors.snapshot()
+        defaults.putAll(MatterSelectorMaterializer.materialize(selectorSnapshot, ::expandSelectorTag))
+        val explicitSnapshot = defaults.snapshot()
+        for (addon in activeAddons) {
             addon.collectConversions(context, builder)
         }
-        defaults.putAll(NeoMatterRuntimeOverrides.snapshot(server))
-
-        val explicitSnapshot = defaults.snapshot()
         val graph = builder.build()
         Constants.LOGGER.info(
             "Replication addon calculation collected {} default nodes and {} conversions",
@@ -72,7 +83,7 @@ object NeoReplicationCalculationService {
         )
 
         val solved = SimpleConversionSolver().solve(graph, explicitSnapshot)
-        MatterNodeDebugCache.publish(explicitSnapshot, graph, solved)
+        MatterNodeDebugCache.publish(selectorSnapshot, explicitSnapshot, graph, solved)
 
         val compounds = LinkedHashMap<Item, MatterCompound>()
         for ((node, compound) in solved.entries.sortedBy { it.key }) {
@@ -117,6 +128,15 @@ object NeoReplicationCalculationService {
     }
 
     fun nodeTypes() = addons.nodeTypes()
+
+    private fun expandSelectorTag(type: LiteResourceLocation, id: LiteResourceLocation): Iterable<MatterNodeKey> {
+        val resourceId = id.toMcResourceLocation()
+        return when (type) {
+            MatterNodes.ITEM -> BuiltinNodeResolver.itemNodesInTag(resourceId)
+            MatterNodes.FLUID -> BuiltinNodeResolver.fluidNodesInTag(resourceId)
+            else -> emptyList()
+        }
+    }
 
     private fun syncToPlayer(player: ServerPlayer, tag: CompoundTag) {
         Replication.NETWORK.sendTo(ReplicationCalculationPacket(tag), player)

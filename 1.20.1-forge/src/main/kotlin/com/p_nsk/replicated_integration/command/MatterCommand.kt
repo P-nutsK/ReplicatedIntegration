@@ -3,6 +3,8 @@ package com.p_nsk.replicated_integration.command
 import com.buuz135.replication.calculation.ReplicationCalculation
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.DoubleArgumentType
+import com.mojang.brigadier.builder.ArgumentBuilder
+import com.mojang.brigadier.builder.RequiredArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import com.p_nsk.replicated_integration.api.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.LiteMatterCompound
@@ -11,7 +13,11 @@ import com.p_nsk.replicated_integration.api.MatterCommandSupport
 import com.p_nsk.replicated_integration.api.MatterNodeFormatter
 import com.p_nsk.replicated_integration.api.MatterNodeKey
 import com.p_nsk.replicated_integration.api.MatterNodes
+import com.p_nsk.replicated_integration.api.MatterSelectorFormatter
+import com.p_nsk.replicated_integration.api.MatterSelectorKey
+import com.p_nsk.replicated_integration.api.MatterSelectorKind
 import com.p_nsk.replicated_integration.bridge.ForgeReplicationCalculationService
+import com.p_nsk.replicated_integration.data.ForgeMatterConfigOverrides
 import com.p_nsk.replicated_integration.data.ForgeMatterRuntimeOverrides
 import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
 import net.minecraft.ChatFormatting
@@ -25,11 +31,15 @@ import net.minecraftforge.eventbus.api.SubscribeEvent
 object MatterCommand {
     fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
         dispatcher.register(
-            Commands.literal("matter")
-                .then(getBranch())
-                .then(setBranch())
-                .then(denyBranch())
-                .then(resetBranch())
+            Commands.literal("repint")
+                .then(
+                    Commands.literal("matter")
+                        .then(getBranch())
+                        .then(setBranch())
+                        .then(denyBranch())
+                        .then(resetBranch())
+                )
+                .then(commitBranch())
         )
     }
 
@@ -42,31 +52,62 @@ object MatterCommand {
         Commands.literal("get")
             .then(itemGetSelector(::getNode))
             .then(typeGetSelector(::getNode))
+            .then(tagGetSelector(::getTagSelector))
 
     private fun setBranch() =
         Commands.literal("set")
             .requires { it.hasPermission(2) }
             .then(itemSelector(::setSelector))
             .then(typeSelector(::setSelector))
+            .then(tagSelector(::setSelector))
 
     private fun denyBranch() =
         Commands.literal("deny")
             .requires { it.hasPermission(2) }
-            .then(itemSelector(::denyNode))
-            .then(typeSelector(::denyNode))
+            .then(itemSelector(::denySelector))
+            .then(typeSelector(::denySelector))
+            .then(tagSelector(::denySelector))
 
     private fun resetBranch() =
         Commands.literal("reset")
             .requires { it.hasPermission(2) }
-            .then(itemSelector(::resetNode))
-            .then(typeSelector(::resetNode))
+            .then(itemSelector(::resetSelector))
+            .then(typeSelector(::resetSelector))
+            .then(tagSelector(::resetSelector))
 
-    private fun itemSelector(action: (CommandContext<CommandSourceStack>, MatterNodeKey) -> Int) =
+    private fun commitBranch() =
+        Commands.literal("commit")
+            .requires { it.hasPermission(2) }
+            .executes(::commitRuntimeOverrides)
+
+    private fun itemSelector(action: (CommandContext<CommandSourceStack>, MatterSelectorKey) -> Int) =
         Commands.literal("item")
             .then(
                 Commands.argument("id", ResourceLocationArgument.id())
-                    .executes { context -> action(context, MatterNodes.item(parseId(context, "id"))) }
-                    .applySetArguments { node -> action(this, node) }
+                    .executes { context -> action(context, MatterSelectorKey(MatterSelectorKind.NODE, MatterNodes.ITEM, parseId(context, "id"))) }
+                    .let { applySetArguments(it, { context -> MatterSelectorKey(MatterSelectorKind.NODE, MatterNodes.ITEM, parseId(context, "id")) }, action) }
+            )
+
+    private fun typeSelector(action: (CommandContext<CommandSourceStack>, MatterSelectorKey) -> Int) =
+        Commands.literal("type")
+            .then(
+                Commands.argument("nodeType", ResourceLocationArgument.id())
+                    .then(
+                        Commands.argument("id", ResourceLocationArgument.id())
+                            .executes { context -> action(context, concreteSelector(context)) }
+                            .let { applySetArguments(it, ::concreteSelector, action) }
+                    )
+            )
+
+    private fun tagSelector(action: (CommandContext<CommandSourceStack>, MatterSelectorKey) -> Int) =
+        Commands.literal("tag")
+            .then(
+                Commands.argument("nodeType", ResourceLocationArgument.id())
+                    .then(
+                        Commands.argument("id", ResourceLocationArgument.id())
+                            .executes { context -> action(context, tagSelector(context)) }
+                            .let { applySetArguments(it, ::tagSelector, action) }
+                    )
             )
 
     private fun itemGetSelector(action: (CommandContext<CommandSourceStack>, MatterNodeKey) -> Int) =
@@ -74,18 +115,7 @@ object MatterCommand {
             .then(
                 Commands.argument("id", ResourceLocationArgument.id())
                     .executes { context -> action(context, MatterNodes.item(parseId(context, "id"))) }
-                    .applyGetArguments { node -> action(this, node) }
-            )
-
-    private fun typeSelector(action: (CommandContext<CommandSourceStack>, MatterNodeKey) -> Int) =
-        Commands.literal("type")
-            .then(
-                Commands.argument("nodeType", ResourceLocationArgument.id())
-                    .then(
-                        Commands.argument("id", ResourceLocationArgument.id())
-                            .executes { context -> action(context, MatterNodeKey(parseId(context, "nodeType"), parseId(context, "id"))) }
-                            .applySetArguments { node -> action(this, node) }
-                    )
+                    .let { applyGetArguments(it, { context -> MatterNodes.item(parseId(context, "id")) }, action) }
             )
 
     private fun typeGetSelector(action: (CommandContext<CommandSourceStack>, MatterNodeKey) -> Int) =
@@ -95,14 +125,27 @@ object MatterCommand {
                     .then(
                         Commands.argument("id", ResourceLocationArgument.id())
                             .executes { context -> action(context, MatterNodeKey(parseId(context, "nodeType"), parseId(context, "id"))) }
-                            .applyGetArguments { node -> action(this, node) }
+                            .let { applyGetArguments(it, { context -> MatterNodeKey(parseId(context, "nodeType"), parseId(context, "id")) }, action) }
                     )
             )
 
-    private fun com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, *>.applySetArguments(
-        execute: CommandContext<CommandSourceStack>.(MatterNodeKey) -> Int,
-    ) =
-        then(
+    private fun tagGetSelector(action: (CommandContext<CommandSourceStack>, MatterSelectorKey) -> Int) =
+        Commands.literal("tag")
+            .then(
+                Commands.argument("nodeType", ResourceLocationArgument.id())
+                    .then(
+                        Commands.argument("id", ResourceLocationArgument.id())
+                            .executes { context -> action(context, tagSelector(context)) }
+                            .let { applyTagGetArguments(it, ::tagSelector, action) }
+                    )
+            )
+
+    private fun applySetArguments(
+        builder: RequiredArgumentBuilder<CommandSourceStack, *>,
+        selectorOf: (CommandContext<CommandSourceStack>) -> MatterSelectorKey,
+        execute: (CommandContext<CommandSourceStack>, MatterSelectorKey) -> Int,
+    ): ArgumentBuilder<CommandSourceStack, *> =
+        builder.then(
             Commands.literal("all")
                 .then(
                     Commands.argument("earth", DoubleArgumentType.doubleArg(0.0))
@@ -120,12 +163,7 @@ object MatterCommand {
                                                                     Commands.argument("living", DoubleArgumentType.doubleArg(0.0))
                                                                         .then(
                                                                             Commands.argument("quantum", DoubleArgumentType.doubleArg(0.0))
-                                                                                .executes {
-                                                                                    execute(
-                                                                                        it,
-                                                                                        selectorNode(it),
-                                                                                    )
-                                                                                }
+                                                                                .executes { execute(it, selectorOf(it)) }
                                                                         )
                                                                 )
                                                         )
@@ -134,56 +172,51 @@ object MatterCommand {
                                 )
                         )
                 )
-        ).also { builder ->
+        ).also { withMatterTypes ->
             MatterCommandSupport.allMatterTypes.forEach { (name, _) ->
-                builder.then(
+                withMatterTypes.then(
                     Commands.literal(name)
                         .then(
                             Commands.argument("amount", DoubleArgumentType.doubleArg(0.000001))
-                                .executes {
-                                    execute(
-                                        it,
-                                        selectorNode(it),
-                                    )
-                                }
+                                .executes { execute(it, selectorOf(it)) }
                         )
                 )
             }
         }
 
-    private fun com.mojang.brigadier.builder.RequiredArgumentBuilder<CommandSourceStack, *>.applyGetArguments(
-        execute: CommandContext<CommandSourceStack>.(MatterNodeKey) -> Int,
-    ) =
-        also { builder ->
+    private fun applyGetArguments(
+        builder: RequiredArgumentBuilder<CommandSourceStack, *>,
+        nodeOf: (CommandContext<CommandSourceStack>) -> MatterNodeKey,
+        execute: (CommandContext<CommandSourceStack>, MatterNodeKey) -> Int,
+    ): ArgumentBuilder<CommandSourceStack, *> =
+        builder.also { withMatterTypes ->
             MatterCommandSupport.allMatterTypes.forEach { (name, _) ->
-                builder.then(
+                withMatterTypes.then(
                     Commands.literal(name)
-                        .executes {
-                            execute(
-                                it,
-                                selectorNode(it),
-                            )
-                        }
+                        .executes { execute(it, nodeOf(it)) }
                 )
             }
         }
 
-    private fun selectorNode(context: CommandContext<CommandSourceStack>): MatterNodeKey =
-        if (context.nodes.any { it.node.name == "nodeType" }) {
-            MatterNodeKey(parseId(context, "nodeType"), parseId(context, "id"))
-        } else {
-            MatterNodes.item(parseId(context, "id"))
+    private fun applyTagGetArguments(
+        builder: RequiredArgumentBuilder<CommandSourceStack, *>,
+        selectorOf: (CommandContext<CommandSourceStack>) -> MatterSelectorKey,
+        execute: (CommandContext<CommandSourceStack>, MatterSelectorKey) -> Int,
+    ): ArgumentBuilder<CommandSourceStack, *> =
+        builder.also { withMatterTypes ->
+            MatterCommandSupport.allMatterTypes.forEach { (name, _) ->
+                withMatterTypes.then(
+                    Commands.literal(name)
+                        .executes { execute(it, selectorOf(it)) }
+                )
+            }
         }
 
     private fun getNode(context: CommandContext<CommandSourceStack>, node: MatterNodeKey): Int {
         val explicitValue = MatterNodeDebugCache.explicit(node)
         val solvedValue = MatterNodeDebugCache.get(node)
         val label = MatterNodeFormatter.formatNode(node, ForgeReplicationCalculationService.nodeTypes())
-        val requestedMatterType =
-            context.nodes
-                .lastOrNull { it.node.name in MatterCommandSupport.allMatterTypes.map { pair -> pair.first } }
-                ?.node
-                ?.name
+        val requestedMatterType = requestedMatterType(context)
         when (explicitValue) {
             is ExplicitMatterValue.Deny -> {
                 context.source.sendSuccess({
@@ -203,29 +236,51 @@ object MatterCommand {
                     context.source.sendFailure(Component.literal("No matter value is available for $label"))
                     return 0
                 }
-                val entries =
-                    compound.values.entries
-                        .sortedBy { it.key.toString() }
-                        .filter { entry ->
-                            requestedMatterType == null || MatterCommandSupport.singleMatterType(requestedMatterType) == entry.key
-                        }
+                val entries = filterMatterEntries(compound, requestedMatterType)
                 if (requestedMatterType != null && entries.isEmpty()) {
                     context.source.sendFailure(Component.literal("$label has no ${requestedMatterType} matter"))
                     return 0
                 }
-                for ((matterId, amount) in entries) {
-                    context.source.sendSuccess({
-                        Component.literal("- ")
-                            .append(Component.literal(matterId.toString()).withStyle(ChatFormatting.AQUA))
-                            .append(Component.literal(": ${MatterCommandSupport.formatAmount(amount)}"))
-                    }, false)
-                }
+                emitMatterEntries(context.source, entries)
             }
         }
         return 1
     }
 
-    private fun setSelector(context: CommandContext<CommandSourceStack>, node: MatterNodeKey): Int {
+    private fun getTagSelector(context: CommandContext<CommandSourceStack>, selector: MatterSelectorKey): Int {
+        val explicitValue = MatterNodeDebugCache.selector(selector)
+        val label = MatterSelectorFormatter.format(selector, ForgeReplicationCalculationService.nodeTypes())
+        val requestedMatterType = requestedMatterType(context)
+        when (explicitValue) {
+            is ExplicitMatterValue.Deny -> {
+                context.source.sendSuccess({
+                    Component.literal("Selector ").append(Component.literal(label).withStyle(ChatFormatting.GREEN))
+                        .append(Component.literal(": denied").withStyle(ChatFormatting.RED))
+                        .append(Component.literal(" via ${explicitValue.source.displayName}").withStyle(ChatFormatting.GRAY))
+                }, false)
+                return 1
+            }
+            is ExplicitMatterValue.Set -> {
+                context.source.sendSuccess({
+                    Component.literal("Selector ").append(Component.literal(label).withStyle(ChatFormatting.GREEN))
+                        .append(Component.literal(" [${explicitValue.source.displayName}]").withStyle(ChatFormatting.GRAY))
+                }, false)
+                val entries = filterMatterEntries(explicitValue.compound, requestedMatterType)
+                if (requestedMatterType != null && entries.isEmpty()) {
+                    context.source.sendFailure(Component.literal("$label has no ${requestedMatterType} matter"))
+                    return 0
+                }
+                emitMatterEntries(context.source, entries)
+                return 1
+            }
+            null -> {
+                context.source.sendFailure(Component.literal("No explicit selector value is available for $label"))
+                return 0
+            }
+        }
+    }
+
+    private fun setSelector(context: CommandContext<CommandSourceStack>, selector: MatterSelectorKey): Int {
         val server = context.source.server
         val compound =
             if (context.nodes.any { it.node.name == "all" }) {
@@ -234,34 +289,34 @@ object MatterCommand {
                     return 0
                 }
             } else {
-                val type = context.nodes.last { it.node.name in MatterCommandSupport.allMatterTypes.map { pair -> pair.first } }.node.name
+                val type = requestedMatterType(context) ?: return 0
                 val amount = DoubleArgumentType.getDouble(context, "amount")
-                val current = (ForgeMatterRuntimeOverrides.snapshot(server)[node] as? ExplicitMatterValue.Set)?.compound?.values?.toMutableMap() ?: linkedMapOf()
+                val current = (ForgeMatterRuntimeOverrides.snapshot(server)[selector] as? ExplicitMatterValue.Set)?.compound?.values?.toMutableMap() ?: linkedMapOf()
                 current[MatterCommandSupport.singleMatterType(type)!!] = amount
                 LiteMatterCompound(current)
             }
-        ForgeMatterRuntimeOverrides.set(server, node, compound)
+        ForgeMatterRuntimeOverrides.set(server, selector, compound)
         ReplicationCalculation.calculateRecipes()
         context.source.sendSuccess({
-            Component.literal("Updated ${MatterNodeFormatter.formatNode(node, ForgeReplicationCalculationService.nodeTypes())} and queued recalculation.")
+            Component.literal("Updated ${MatterSelectorFormatter.format(selector, ForgeReplicationCalculationService.nodeTypes())} and queued recalculation.")
         }, true)
         return 1
     }
 
-    private fun denyNode(context: CommandContext<CommandSourceStack>, node: MatterNodeKey): Int {
-        ForgeMatterRuntimeOverrides.deny(context.source.server, node)
+    private fun denySelector(context: CommandContext<CommandSourceStack>, selector: MatterSelectorKey): Int {
+        ForgeMatterRuntimeOverrides.deny(context.source.server, selector)
         ReplicationCalculation.calculateRecipes()
         context.source.sendSuccess({
-            Component.literal("Denied ${MatterNodeFormatter.formatNode(node, ForgeReplicationCalculationService.nodeTypes())} and queued recalculation.")
+            Component.literal("Denied ${MatterSelectorFormatter.format(selector, ForgeReplicationCalculationService.nodeTypes())} and queued recalculation.")
         }, true)
         return 1
     }
 
-    private fun resetNode(context: CommandContext<CommandSourceStack>, node: MatterNodeKey): Int {
-        ForgeMatterRuntimeOverrides.reset(context.source.server, node)
+    private fun resetSelector(context: CommandContext<CommandSourceStack>, selector: MatterSelectorKey): Int {
+        ForgeMatterRuntimeOverrides.reset(context.source.server, selector)
         ReplicationCalculation.calculateRecipes()
         context.source.sendSuccess({
-            Component.literal("Reset runtime override for ${MatterNodeFormatter.formatNode(node, ForgeReplicationCalculationService.nodeTypes())} and queued recalculation.")
+            Component.literal("Reset runtime override for ${MatterSelectorFormatter.format(selector, ForgeReplicationCalculationService.nodeTypes())} and queued recalculation.")
         }, true)
         return 1
     }
@@ -277,8 +332,55 @@ object MatterCommand {
         return values.takeIf { it.isNotEmpty() }?.let(::LiteMatterCompound)
     }
 
+    private fun concreteSelector(context: CommandContext<CommandSourceStack>) =
+        MatterSelectorKey(MatterSelectorKind.NODE, parseId(context, "nodeType"), parseId(context, "id"))
+
+    private fun tagSelector(context: CommandContext<CommandSourceStack>) =
+        MatterSelectorKey(MatterSelectorKind.TAG, parseId(context, "nodeType"), parseId(context, "id"))
+
     private fun parseId(context: CommandContext<CommandSourceStack>, name: String): LiteResourceLocation {
         val parsed = ResourceLocationArgument.getId(context, name)
         return LiteResourceLocation.of(parsed.namespace, parsed.path)
+    }
+
+    private fun requestedMatterType(context: CommandContext<CommandSourceStack>): String? =
+        context.nodes
+            .lastOrNull { it.node.name in MatterCommandSupport.allMatterTypes.map { pair -> pair.first } }
+            ?.node
+            ?.name
+
+    private fun filterMatterEntries(
+        compound: LiteMatterCompound,
+        requestedMatterType: String?,
+    ) = compound.values.entries
+        .sortedBy { it.key.toString() }
+        .filter { entry ->
+            requestedMatterType == null || MatterCommandSupport.singleMatterType(requestedMatterType) == entry.key
+        }
+
+    private fun emitMatterEntries(
+        source: CommandSourceStack,
+        entries: List<Map.Entry<LiteResourceLocation, Double>>,
+    ) {
+        for ((matterId, amount) in entries) {
+            source.sendSuccess({
+                Component.literal("- ")
+                    .append(Component.literal(matterId.toString()).withStyle(ChatFormatting.AQUA))
+                    .append(Component.literal(": ${MatterCommandSupport.formatAmount(amount)}"))
+            }, false)
+        }
+    }
+
+    private fun commitRuntimeOverrides(context: CommandContext<CommandSourceStack>): Int {
+        val committed = ForgeMatterConfigOverrides.commit(context.source.server)
+        if (committed == 0) {
+            context.source.sendFailure(Component.literal("No runtime overrides are present to commit."))
+            return 0
+        }
+        ReplicationCalculation.calculateRecipes()
+        context.source.sendSuccess({
+            Component.literal("Committed $committed runtime override(s) to config and queued recalculation.")
+        }, true)
+        return 1
     }
 }

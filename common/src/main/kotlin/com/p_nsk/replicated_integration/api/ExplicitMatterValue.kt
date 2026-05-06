@@ -6,7 +6,8 @@ enum class ExplicitMatterSource(
 ) {
     NODE_VALUE(0, "replicated_integration node value"),
     DATAPACK(1, "replication matter_values"),
-    RUNTIME(2, "runtime override"),
+    CONFIG(2, "config override"),
+    RUNTIME(3, "runtime override"),
 }
 
 sealed interface ExplicitMatterValue {

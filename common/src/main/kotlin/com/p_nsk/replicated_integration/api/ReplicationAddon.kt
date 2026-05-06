@@ -13,5 +13,7 @@ interface ReplicationAddon<C> {
 
     fun collectDefaults(context: C, defaults: MutableMatterDefaults) = Unit
 
+    fun collectSelectors(context: C, selectors: MutableMatterSelectors) = Unit
+
     fun collectConversions(context: C, collector: IConversionSink) = Unit
 }
