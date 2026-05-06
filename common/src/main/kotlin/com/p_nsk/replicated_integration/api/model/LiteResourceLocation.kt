@@ -4,8 +4,10 @@ package com.p_nsk.replicated_integration.api.model
  * */
 @JvmRecord
 data class LiteResourceLocation(val namespace: String, val path: String) : Comparable<LiteResourceLocation> {
-
     companion object {
+        private val NAMESPACE_PATTERN = Regex("[a-z0-9_.-]+")
+        private val PATH_PATTERN = Regex("[a-z0-9_./-]+")
+
         @JvmStatic
         fun of(namespace: String, path: String): LiteResourceLocation {
             return LiteResourceLocation(namespace, path)
@@ -19,6 +21,8 @@ data class LiteResourceLocation(val namespace: String, val path: String) : Compa
         if (path.isBlank()) {
             throw IllegalArgumentException("Path must not be blank")
         }
+        require(namespace.matches(NAMESPACE_PATTERN)) { "Invalid namespace: $namespace" }
+        require(path.matches(PATH_PATTERN)) { "Invalid path: $path" }
     }
 
     override fun compareTo(other: LiteResourceLocation): Int {

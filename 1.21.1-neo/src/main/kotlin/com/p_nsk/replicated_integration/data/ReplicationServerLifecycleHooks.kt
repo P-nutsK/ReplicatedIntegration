@@ -7,6 +7,7 @@ import net.neoforged.neoforge.event.server.ServerStartedEvent
 object ReplicationServerLifecycleHooks {
     @SubscribeEvent
     fun onServerStarted(event: ServerStartedEvent) {
+        ReplicationCalculation.organizeRecipes(event.server.recipeManager, event.server.registryAccess())
         ReplicationCalculation.calculateRecipes(event.server.registryAccess())
     }
 }

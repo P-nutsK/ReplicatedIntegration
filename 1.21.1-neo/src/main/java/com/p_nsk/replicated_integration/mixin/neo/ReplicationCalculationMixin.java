@@ -17,9 +17,18 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.HashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Mixin(ReplicationCalculation.class)
 public abstract class ReplicationCalculationMixin {
+    private static final ExecutorService CALCULATION_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "Replication-Integration-Neo");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private static final AtomicLong CALCULATION_GENERATION = new AtomicLong();
 
     @Shadow(remap = false)
     public static HashMap<Item, MatterCompound> DEFAULT_MATTER_COMPOUND;
@@ -33,25 +42,31 @@ public abstract class ReplicationCalculationMixin {
     @Inject(method = "calculateRecipes", at = @At("HEAD"), cancellable = true, remap = false)
     private static void replicatedIntegration$replaceCalculation(RegistryAccess registryAccess, CallbackInfo ci) {
         ci.cancel();
-        if (ServerLifecycleHooks.getCurrentServer() == null) {
+        final var server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
             Constants.INSTANCE.getLOGGER().info("Skipping replicated_integration calculation until a server is available");
             return;
         }
-        Thread thread = new Thread(() -> {
+        STATUS = MatterCalculationStatus.NOT_CALCULATED;
+        final long generation = CALCULATION_GENERATION.incrementAndGet();
+        CALCULATION_EXECUTOR.execute(() -> {
             Constants.INSTANCE.getLOGGER().info("Replacing Replication calculateRecipes with replicated_integration addon pipeline");
-            STATUS = MatterCalculationStatus.NOT_CALCULATED;
             CalculationArtifacts artifacts = NeoReplicationCalculationService.INSTANCE.calculate();
             if (artifacts == null) {
                 Constants.INSTANCE.getLOGGER().warn("Replication addon calculation returned no artifacts");
                 return;
             }
-            DEFAULT_MATTER_COMPOUND = artifacts.getCompounds();
-            cachedSyncTag = artifacts.getSyncTag();
-            STATUS = MatterCalculationStatus.CALCULATED;
-            Constants.INSTANCE.getLOGGER().info("Replication addon calculation applied {} exported compounds", DEFAULT_MATTER_COMPOUND.size());
-            NeoReplicationCalculationService.INSTANCE.syncToPlayers(cachedSyncTag);
-        }, "Replication-Integration");
-        thread.setDaemon(true);
-        thread.start();
+            server.execute(() -> {
+                if (generation != CALCULATION_GENERATION.get()) {
+                    Constants.INSTANCE.getLOGGER().info("Skipping stale Neo calculation generation {}", generation);
+                    return;
+                }
+                DEFAULT_MATTER_COMPOUND = artifacts.getCompounds();
+                cachedSyncTag = artifacts.getSyncTag();
+                STATUS = MatterCalculationStatus.CALCULATED;
+                Constants.INSTANCE.getLOGGER().info("Replication addon calculation applied {} exported compounds", DEFAULT_MATTER_COMPOUND.size());
+                NeoReplicationCalculationService.INSTANCE.syncToPlayers(cachedSyncTag);
+            });
+        });
     }
 }

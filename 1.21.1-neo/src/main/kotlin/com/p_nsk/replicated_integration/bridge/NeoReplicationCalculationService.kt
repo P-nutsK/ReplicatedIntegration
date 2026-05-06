@@ -34,6 +34,12 @@ import java.util.HashMap
 import java.util.LinkedHashMap
 
 object NeoReplicationCalculationService {
+    @Volatile
+    private var latestSyncTag: CompoundTag = CompoundTag()
+
+    @Volatile
+    private var latestSyncHash: Int = 0
+
     private val addons =
         ReplicationAddonRegistry(
             listOf(
@@ -120,6 +126,10 @@ object NeoReplicationCalculationService {
     }
 
     fun syncToPlayers(tag: CompoundTag) {
+        if (!rememberLatestSnapshot(tag)) {
+            Constants.LOGGER.info("Skipping Neo replication sync because the snapshot did not change")
+            return
+        }
         val server = ServerLifecycleHooks.getCurrentServer() ?: return
         for (player in server.playerList.players) {
             syncToPlayer(player, tag)
@@ -127,6 +137,18 @@ object NeoReplicationCalculationService {
     }
 
     fun nodeTypes() = addons.nodeTypes()
+
+    @Synchronized
+    private fun rememberLatestSnapshot(tag: CompoundTag): Boolean {
+        val snapshot = tag.copy()
+        val snapshotHash = snapshot.hashCode()
+        if (snapshotHash == latestSyncHash && snapshot == latestSyncTag) {
+            return false
+        }
+        latestSyncTag = snapshot
+        latestSyncHash = snapshotHash
+        return true
+    }
 
     private fun expandSelectorTag(type: LiteResourceLocation, id: LiteResourceLocation): Iterable<MatterNodeKey> {
         val resourceId = id.toMcResourceLocation()

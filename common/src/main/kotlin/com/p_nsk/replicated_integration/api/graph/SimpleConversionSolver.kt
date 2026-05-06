@@ -23,8 +23,10 @@ class SimpleConversionSolver(
             .toMap()
 
         // We intentionally keep one best candidate per node instead of a full proof tree.
-        // loopGuardKey is only meant to break obvious reversible loops such as Rotary, not to
-        // turn this solver into a general path-search engine.
+        // That makes this a lightweight propagation solver rather than a complete craft graph
+        // search: if the cheapest local candidate later becomes unusable, we do not retain the
+        // second-best proof for fallback. loopGuardKey is only meant to break obvious reversible
+        // loops such as Rotary, not to turn this solver into a general path-search engine.
         val known =
             pinned.mapValuesTo(linkedMapOf()) { (_, value) ->
                 SolvedCandidate(value)

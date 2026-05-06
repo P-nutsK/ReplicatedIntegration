@@ -39,6 +39,9 @@ object ForgeReplicationCalculationService {
     @Volatile
     private var latestSyncId: Long = 0L
 
+    @Volatile
+    private var latestSyncHash: Int = 0
+
     private val addons =
         ReplicationAddonRegistry(
             listOf(
@@ -120,8 +123,10 @@ object ForgeReplicationCalculationService {
     }
 
     fun syncToPlayers(tag: CompoundTag) {
-        latestSyncTag = tag.copy()
-        latestSyncId += 1L
+        if (!rememberLatestSnapshot(tag)) {
+            Constants.LOGGER.info("Skipping Forge replication sync because the snapshot did not change")
+            return
+        }
         val server = ServerLifecycleHooks.getCurrentServer() ?: return
         for (player in server.playerList.players) {
             syncToPlayer(player, tag)
@@ -156,6 +161,19 @@ object ForgeReplicationCalculationService {
     }
 
     fun nodeTypes() = addons.nodeTypes()
+
+    @Synchronized
+    private fun rememberLatestSnapshot(tag: CompoundTag): Boolean {
+        val snapshot = tag.copy()
+        val snapshotHash = snapshot.hashCode()
+        if (snapshotHash == latestSyncHash && snapshot == latestSyncTag) {
+            return false
+        }
+        latestSyncTag = snapshot
+        latestSyncHash = snapshotHash
+        latestSyncId += 1L
+        return true
+    }
 
     private fun expandSelectorTag(type: LiteResourceLocation, id: LiteResourceLocation): Iterable<MatterNodeKey> {
         val resourceId = id.toMcResourceLocation()
