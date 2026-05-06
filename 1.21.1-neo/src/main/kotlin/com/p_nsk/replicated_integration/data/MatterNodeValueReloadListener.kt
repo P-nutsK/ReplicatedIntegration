@@ -5,11 +5,11 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.p_nsk.replicated_integration.Constants
-import com.p_nsk.replicated_integration.api.ExplicitMatterSource
-import com.p_nsk.replicated_integration.api.ExplicitMatterValue
-import com.p_nsk.replicated_integration.api.LiteMatterCompound
-import com.p_nsk.replicated_integration.api.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.MatterNodeKey
+import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
+import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
+import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
+import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
+import com.p_nsk.replicated_integration.api.node.MatterNodeKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener

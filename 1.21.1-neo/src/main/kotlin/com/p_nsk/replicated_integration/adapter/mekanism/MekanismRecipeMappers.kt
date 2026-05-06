@@ -1,9 +1,10 @@
 package com.p_nsk.replicated_integration.adapter.mekanism
 
-import com.p_nsk.replicated_integration.api.IConversionSink
-import com.p_nsk.replicated_integration.api.MatterAmount
-import com.p_nsk.replicated_integration.api.RecipeConversionMapper
+import com.p_nsk.replicated_integration.api.graph.IConversionSink
+import com.p_nsk.replicated_integration.api.model.MatterAmount
+import com.p_nsk.replicated_integration.api.graph.RecipeConversionMapper
 import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
+import com.p_nsk.replicated_integration.api.node.MatterNodeKey
 import com.p_nsk.replicated_integration.bridge.NeoRecipeConversionSupport
 import mekanism.api.chemical.ChemicalStack
 import mekanism.api.recipes.ChemicalChemicalToChemicalRecipe
@@ -246,7 +247,7 @@ object MekanismRecipeMappers {
 
     private fun <T> ingredientToAlternativeMatterAmounts(
         ingredient: InputIngredient<T>,
-        nodeOf: (T) -> com.p_nsk.replicated_integration.api.MatterNodeKey?,
+        nodeOf: (T) -> MatterNodeKey?,
         scale: Long = 1L,
     ): List<MatterAmount> =
         ingredient.representations.mapNotNull { representation ->

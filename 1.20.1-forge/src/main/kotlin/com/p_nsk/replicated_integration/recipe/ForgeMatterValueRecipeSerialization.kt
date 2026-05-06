@@ -5,7 +5,7 @@ import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.recipe.MatterValueRecipe
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.p_nsk.replicated_integration.api.MatterValueRecipeExtension
+import com.p_nsk.replicated_integration.api.recipe.MatterValueRecipeExtension
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.crafting.Ingredient

@@ -1,9 +1,9 @@
 package com.p_nsk.replicated_integration.adapter.mekanism
 
-import com.p_nsk.replicated_integration.api.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.MatterAmount
-import com.p_nsk.replicated_integration.api.MatterNodeKey
-import com.p_nsk.replicated_integration.api.MatterNodes
+import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
+import com.p_nsk.replicated_integration.api.model.MatterAmount
+import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.MatterNodes
 import mekanism.api.chemical.ChemicalStack
 import net.minecraft.resources.ResourceLocation
 

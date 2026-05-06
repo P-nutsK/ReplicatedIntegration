@@ -1,5 +1,10 @@
 package com.p_nsk.replicated_integration.api
 
+import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
+import com.p_nsk.replicated_integration.api.node.MatterNodeFormatter
+import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.MatterNodeTypeDef
+import com.p_nsk.replicated_integration.api.node.MatterNodeTypeRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

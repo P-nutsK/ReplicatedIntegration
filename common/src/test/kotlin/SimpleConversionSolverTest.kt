@@ -1,5 +1,17 @@
 package com.p_nsk.replicated_integration.api
 
+import com.p_nsk.replicated_integration.api.graph.ConversionGraphBuilder
+import com.p_nsk.replicated_integration.api.graph.SimpleConversionSolver
+import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
+import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
+import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
+import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
+import com.p_nsk.replicated_integration.api.model.MatterAmount
+import com.p_nsk.replicated_integration.api.model.MatterConversion
+import com.p_nsk.replicated_integration.api.node.MatterNodes
+import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
+import com.p_nsk.replicated_integration.api.selector.MatterSelectorKind
+import com.p_nsk.replicated_integration.api.selector.MatterSelectorMaterializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -125,7 +137,11 @@ class SimpleConversionSolverTest {
         val oakLog = MatterNodes.item(LiteResourceLocation.of("minecraft", "oak_log"))
         val oakWood = MatterNodes.item(LiteResourceLocation.of("minecraft", "oak_wood"))
         val earth = LiteResourceLocation.of("replication", "earth")
-        val logsSelector = MatterSelectorKey(MatterSelectorKind.TAG, MatterNodes.ITEM, LiteResourceLocation.of("minecraft", "oak_logs"))
+        val logsSelector = MatterSelectorKey(
+            MatterSelectorKind.TAG,
+            MatterNodes.ITEM,
+            LiteResourceLocation.of("minecraft", "oak_logs")
+        )
 
         val materialized =
             MatterSelectorMaterializer.materialize(
@@ -155,9 +171,17 @@ class SimpleConversionSolverTest {
             MatterSelectorMaterializer.materialize(
                 selectors =
                     mapOf(
-                        MatterSelectorKey(MatterSelectorKind.TAG, MatterNodes.ITEM, LiteResourceLocation.of("minecraft", "oak_logs")) to
+                        MatterSelectorKey(
+                            MatterSelectorKind.TAG,
+                            MatterNodes.ITEM,
+                            LiteResourceLocation.of("minecraft", "oak_logs")
+                        ) to
                             ExplicitMatterValue.Deny(ExplicitMatterSource.RUNTIME),
-                        MatterSelectorKey(MatterSelectorKind.NODE, MatterNodes.ITEM, LiteResourceLocation.of("minecraft", "oak_log")) to
+                        MatterSelectorKey(
+                            MatterSelectorKind.NODE,
+                            MatterNodes.ITEM,
+                            LiteResourceLocation.of("minecraft", "oak_log")
+                        ) to
                             ExplicitMatterValue.Set(LiteMatterCompound.single(earth, 20.0), ExplicitMatterSource.RUNTIME),
                     ),
                 expandTag = { _, _ -> listOf(oakLog) },

@@ -1,6 +1,6 @@
 package com.p_nsk.replicated_integration.bridge
 
-import com.p_nsk.replicated_integration.api.ReplicationAddonEnvironment
+import com.p_nsk.replicated_integration.api.addon.ReplicationAddonEnvironment
 import net.neoforged.fml.ModList
 
 object NeoReplicationAddonEnvironment : ReplicationAddonEnvironment {

@@ -1,9 +1,11 @@
 package com.p_nsk.replicated_integration.adapter.mekanism
 
-import com.p_nsk.replicated_integration.api.IConversionSink
-import com.p_nsk.replicated_integration.api.ReplicationAddon
-import com.p_nsk.replicated_integration.api.ReplicationAddonEnvironment
+import com.p_nsk.replicated_integration.api.graph.IConversionSink
+import com.p_nsk.replicated_integration.api.addon.ReplicationAddon
+import com.p_nsk.replicated_integration.api.addon.ReplicationAddonEnvironment
+import com.p_nsk.replicated_integration.adapter.mekanism.synthetic.ForgeMekanismSyntheticConversionContributor
 import com.p_nsk.replicated_integration.bridge.ForgeReplicationAddonContext
+import com.p_nsk.replicated_integration.config.ForgeCompatibilityConfig
 import net.minecraft.world.item.crafting.Recipe
 
 object ReplicationMekanismAddon : ReplicationAddon<ForgeReplicationAddonContext> {
@@ -17,6 +19,9 @@ object ReplicationMekanismAddon : ReplicationAddon<ForgeReplicationAddonContext>
         for (recipe in context.recipeManager.recipes) {
             val mapper = MekanismRecipeMappers.all.firstOrNull { it.supports(recipe) } ?: continue
             mapper.collect(recipe as Recipe<*>, collector)
+        }
+        if (ForgeCompatibilityConfig.isNuclearRecipeEnabled()) {
+            ForgeMekanismSyntheticConversionContributor.collectNuclearConversions(collector)
         }
     }
 }

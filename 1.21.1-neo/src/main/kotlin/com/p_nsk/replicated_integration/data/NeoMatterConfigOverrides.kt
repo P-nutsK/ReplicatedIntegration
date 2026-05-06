@@ -1,12 +1,11 @@
 package com.p_nsk.replicated_integration.data
 
-import com.p_nsk.replicated_integration.api.ExplicitMatterSource
-import com.p_nsk.replicated_integration.api.ExplicitMatterValue
-import com.p_nsk.replicated_integration.api.MatterSelectorKey
-import com.p_nsk.replicated_integration.api.MatterSelectorStorageCodec
+import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
+import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
+import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
+import com.p_nsk.replicated_integration.api.selector.MatterSelectorStorageCodec
 import net.minecraft.server.MinecraftServer
 import net.neoforged.fml.loading.FMLPaths
-import java.nio.file.Files
 import java.nio.file.Path
 
 object NeoMatterConfigOverrides {

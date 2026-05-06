@@ -1,10 +1,10 @@
 package com.p_nsk.replicated_integration.bridge
 
-import com.p_nsk.replicated_integration.api.IConversionSink
-import com.p_nsk.replicated_integration.api.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.MatterAmount
-import com.p_nsk.replicated_integration.api.MatterConversion
-import com.p_nsk.replicated_integration.api.MatterNodeKey
+import com.p_nsk.replicated_integration.api.graph.IConversionSink
+import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
+import com.p_nsk.replicated_integration.api.model.MatterAmount
+import com.p_nsk.replicated_integration.api.model.MatterConversion
+import com.p_nsk.replicated_integration.api.node.MatterNodeKey
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack

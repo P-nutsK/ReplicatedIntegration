@@ -1,3 +1,5 @@
+@file:Suppress("PropertyName")
+
 plugins {
     id("legacyforge-mod-conventions")
     kotlin("jvm")
@@ -19,6 +21,7 @@ dependencies {
     modRuntimeOnly("curse.maven:tmrv-1194921:7983491")
     modRuntimeOnly("maven.modrinth:emi:$emiVersion1_20_1")
     modRuntimeOnly("curse.maven:jade-324717:$jadeFileId1_20_1")
+
 
     modCompileOnly("mekanism:Mekanism:$mekanismVersion1_20_1:api")
     modRuntimeOnly("mekanism:Mekanism:$mekanismVersion1_20_1")

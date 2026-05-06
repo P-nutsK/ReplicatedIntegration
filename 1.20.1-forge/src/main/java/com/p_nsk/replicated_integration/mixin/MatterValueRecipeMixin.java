@@ -1,7 +1,7 @@
 package com.p_nsk.replicated_integration.mixin;
 
 import com.buuz135.replication.recipe.MatterValueRecipe;
-import com.p_nsk.replicated_integration.api.MatterValueRecipeExtension;
+import com.p_nsk.replicated_integration.api.recipe.MatterValueRecipeExtension;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 

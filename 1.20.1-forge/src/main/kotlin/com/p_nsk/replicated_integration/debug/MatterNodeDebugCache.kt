@@ -1,10 +1,10 @@
 package com.p_nsk.replicated_integration.debug
 
-import com.p_nsk.replicated_integration.api.LiteMatterCompound
-import com.p_nsk.replicated_integration.api.ConversionGraph
-import com.p_nsk.replicated_integration.api.ExplicitMatterValue
-import com.p_nsk.replicated_integration.api.MatterNodeKey
-import com.p_nsk.replicated_integration.api.MatterSelectorKey
+import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
+import com.p_nsk.replicated_integration.api.graph.ConversionGraph
+import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
+import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
 
 object MatterNodeDebugCache {
     @Volatile
