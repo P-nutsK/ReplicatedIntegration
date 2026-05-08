@@ -1,17 +1,15 @@
-package com.p_nsk.replicated_integration.adapter.mekanism
+package com.p_nsk.replicated_integration.adapter.advanced_ae
 
-import com.p_nsk.replicated_integration.api.graph.IConversionSink
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddon
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonEnvironment
-import com.p_nsk.replicated_integration.adapter.mekanism.synthetic.ForgeMekanismSyntheticConversionContributor
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
+import com.p_nsk.replicated_integration.api.graph.IConversionSink
 import com.p_nsk.replicated_integration.core.ForgeReplicationAddonContext
-import com.p_nsk.replicated_integration.config.ForgeCompatibilityConfig
 import net.minecraft.world.item.crafting.Recipe
 
 @OptIn(ReplicationAddonLoadSafetyContract::class)
-object ReplicationMekanismAddon : ReplicationAddon<ForgeReplicationAddonContext> {
-    override val id: String = "mekanism"
+object ReplicationAdvancedAEAddon : ReplicationAddon<ForgeReplicationAddonContext> {
+    override val id: String = "advanced_ae"
 
     override fun isEnabled(environment: ReplicationAddonEnvironment): Boolean =
         environment.isModLoaded(id)
@@ -19,11 +17,8 @@ object ReplicationMekanismAddon : ReplicationAddon<ForgeReplicationAddonContext>
     @Suppress("UNCHECKED_CAST")
     override fun collectConversions(context: ForgeReplicationAddonContext, collector: IConversionSink) {
         for (recipe in context.recipeManager.recipes) {
-            val mapper = MekanismRecipeMappers.all.firstOrNull { it.supports(recipe) } ?: continue
+            val mapper = AAERecipeMappers.all.firstOrNull { it.supports(recipe) } ?: continue
             mapper.collect(recipe as Recipe<*>, collector)
-        }
-        if (ForgeCompatibilityConfig.isNuclearRecipeEnabled()) {
-            ForgeMekanismSyntheticConversionContributor.collectNuclearConversions(collector)
         }
     }
 }

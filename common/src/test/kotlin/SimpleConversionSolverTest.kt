@@ -6,7 +6,7 @@ import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
 import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.model.MatterAmount
+import com.p_nsk.replicated_integration.api.model.NodeAmount
 import com.p_nsk.replicated_integration.api.model.MatterConversion
 import com.p_nsk.replicated_integration.api.node.MatterNodes
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
@@ -27,16 +27,16 @@ class SimpleConversionSolverTest {
         builder.add(
             MatterConversion(
                 id = LiteResourceLocation.of("minecraft", "oak_planks"),
-                consumes = listOf(MatterAmount(oakLog, 1)),
-                produces = MatterAmount(oakPlanks, 4),
+                consumes = listOf(NodeAmount(oakLog, 1)),
+                produces = NodeAmount(oakPlanks, 4),
             )
         )
 
         builder.add(
             MatterConversion(
                 id = LiteResourceLocation.of("minecraft", "stick"),
-                consumes = listOf(MatterAmount(oakPlanks, 2)),
-                produces = MatterAmount(stick, 4),
+                consumes = listOf(NodeAmount(oakPlanks, 2)),
+                produces = NodeAmount(stick, 4),
             )
         )
 
@@ -66,9 +66,9 @@ class SimpleConversionSolverTest {
         builder.add(
             MatterConversion(
                 id = LiteResourceLocation.of("mekanism", "electrolysis/water_to_hydrogen"),
-                consumes = listOf(MatterAmount(water, 2)),
-                produces = MatterAmount(hydrogen, 1),
-                credits = listOf(MatterAmount(oxygen, 1)),
+                consumes = listOf(NodeAmount(water, 2)),
+                produces = NodeAmount(hydrogen, 1),
+                credits = listOf(NodeAmount(oxygen, 1)),
             )
         )
 
@@ -97,24 +97,24 @@ class SimpleConversionSolverTest {
         builder.add(
             MatterConversion(
                 id = LiteResourceLocation.of("mekanism", "rotary/water_to_steam"),
-                consumes = listOf(MatterAmount(water, 1)),
-                produces = MatterAmount(steam, 2),
+                consumes = listOf(NodeAmount(water, 1)),
+                produces = NodeAmount(steam, 2),
                 loopGuardKey = rotaryLoop,
             )
         )
         builder.add(
             MatterConversion(
                 id = LiteResourceLocation.of("mekanism", "rotary/steam_to_water"),
-                consumes = listOf(MatterAmount(steam, 1)),
-                produces = MatterAmount(water, 1),
+                consumes = listOf(NodeAmount(steam, 1)),
+                produces = NodeAmount(water, 1),
                 loopGuardKey = rotaryLoop,
             )
         )
         builder.add(
             MatterConversion(
                 id = LiteResourceLocation.of("test", "steam_polish"),
-                consumes = listOf(MatterAmount(steam, 1)),
-                produces = MatterAmount(metallicSteam, 1),
+                consumes = listOf(NodeAmount(steam, 1)),
+                produces = NodeAmount(metallicSteam, 1),
             )
         )
 

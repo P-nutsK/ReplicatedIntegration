@@ -2,15 +2,16 @@ package com.p_nsk.replicated_integration.mixin;
 
 import com.buuz135.replication.calculation.MatterCompound;
 import com.buuz135.replication.calculation.ReplicationCalculation;
-import com.p_nsk.replicated_integration.bridge.CalculationArtifacts;
-import com.p_nsk.replicated_integration.bridge.ForgeCalculationSnapshot;
-import com.p_nsk.replicated_integration.bridge.ForgeReplicationCalculationService;
+import com.p_nsk.replicated_integration.core.CalculationArtifacts;
+import com.p_nsk.replicated_integration.core.ForgeCalculationSnapshot;
+import com.p_nsk.replicated_integration.core.ForgeReplicationCalculationService;
 import com.p_nsk.replicated_integration.Constants;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -23,16 +24,21 @@ import javax.annotation.Nullable;
 
 @Mixin(ReplicationCalculation.class)
 public abstract class ReplicationCalculationMixin {
+    @Unique
     private static final ExecutorService CALCULATION_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "Replication-Integration-Forge");
         thread.setDaemon(true);
         return thread;
     });
+    @Unique
     private static final Object CALCULATION_LOCK = new Object();
+    @Unique
     private static final AtomicLong CALCULATION_GENERATION = new AtomicLong();
+    @Unique
     @Nullable
-    private static PendingCalculation pendingCalculation;
-    private static boolean workerRunning;
+    private static PendingCalculation PENDING_CALCULATION;
+    @Unique
+    private static boolean WORKER_RUNNING;
 
     @Shadow(remap = false) public static HashMap<String, MatterCompound> DEFAULT_MATTER_COMPOUND;
     @Shadow(remap = false) private static CompoundTag cachedSyncTag;
@@ -48,23 +54,24 @@ public abstract class ReplicationCalculationMixin {
         ForgeCalculationSnapshot snapshot = ForgeReplicationCalculationService.INSTANCE.prepareSnapshot(server);
         synchronized (CALCULATION_LOCK) {
             long generation = CALCULATION_GENERATION.incrementAndGet();
-            pendingCalculation = new PendingCalculation(generation, server, snapshot);
-            if (workerRunning) {
+            PENDING_CALCULATION = new PendingCalculation(generation, server, snapshot);
+            if (WORKER_RUNNING) {
                 return;
             }
-            workerRunning = true;
+            WORKER_RUNNING = true;
         }
         CALCULATION_EXECUTOR.execute(ReplicationCalculationMixin::replicatedIntegration$processPendingCalculations);
     }
 
+    @Unique
     private static void replicatedIntegration$processPendingCalculations() {
         while (true) {
             PendingCalculation calculation;
             synchronized (CALCULATION_LOCK) {
-                calculation = pendingCalculation;
-                pendingCalculation = null;
+                calculation = PENDING_CALCULATION;
+                PENDING_CALCULATION = null;
                 if (calculation == null) {
-                    workerRunning = false;
+                    WORKER_RUNNING = false;
                     return;
                 }
             }

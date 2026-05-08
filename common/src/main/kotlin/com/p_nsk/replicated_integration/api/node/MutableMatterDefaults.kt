@@ -5,9 +5,9 @@ import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 
 class MutableMatterDefaults {
-    private val values = linkedMapOf<MatterNodeKey, ExplicitMatterValue>()
+    private val values = linkedMapOf<NodeKey, ExplicitMatterValue>()
 
-    fun put(node: MatterNodeKey, compound: LiteMatterCompound, source: ExplicitMatterSource) {
+    fun put(node: NodeKey, compound: LiteMatterCompound, source: ExplicitMatterSource) {
         val current = values[node]
         val candidate = ExplicitMatterValue.Set(compound, source)
         if (current == null || shouldReplace(current, candidate)) {
@@ -15,7 +15,7 @@ class MutableMatterDefaults {
         }
     }
 
-    fun deny(node: MatterNodeKey, source: ExplicitMatterSource) {
+    fun deny(node: NodeKey, source: ExplicitMatterSource) {
         val current = values[node]
         val candidate = ExplicitMatterValue.Deny(source)
         if (current == null || shouldReplace(current, candidate)) {
@@ -23,7 +23,7 @@ class MutableMatterDefaults {
         }
     }
 
-    fun putAll(other: Map<MatterNodeKey, ExplicitMatterValue>) {
+    fun putAll(other: Map<NodeKey, ExplicitMatterValue>) {
         other.forEach { (node, value) ->
             when (value) {
                 is ExplicitMatterValue.Deny -> deny(node, value.source)
@@ -32,7 +32,7 @@ class MutableMatterDefaults {
         }
     }
 
-    fun snapshot(): Map<MatterNodeKey, ExplicitMatterValue> = values.toMap()
+    fun snapshot(): Map<NodeKey, ExplicitMatterValue> = values.toMap()
 
     private fun shouldReplace(
         current: ExplicitMatterValue,

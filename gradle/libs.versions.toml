@@ -1,0 +1,76 @@
+[versions]
+kotlin = "2.3.0"
+
+slf4j-api = "1.8.0-beta4"
+gson = "2.10.1"
+
+kff-mc1201 = "4.10.0"
+kff-mc1211 = "5.11.0"
+
+mekanism-mc1201 = "1.20.1-10.4.16.80"
+mekanism-mc1211 = "1.21.1-10.7.17.83"
+
+emi-mc1201 = "1.1.22+1.20.1+forge"
+emi-mc1211 = "1.1.22+1.21.1+neoforge"
+
+jade-mc1201 = "6271651"
+jade-mc1211 = "7545219"
+
+replication-mc1201 = "6137645"
+replication-mc1211 = "7331983"
+
+titanium-mc1201 = "5468426"
+titanium-mc1211 = "1.21-4.0.32"
+
+ae2-mc1201 = "15.4.10"
+ae2-mc1211 = "19.2.8"
+
+aae-mc1201 = "7668689"
+
+ae2addonlib-mc1201 = "7668681"
+
+geckolib-mc1201 = "6920925"
+
+tmrv-mc1201 = "7983491"
+tmrv-mc1211 = "7983494"
+
+guideme-mc1201 = "7127447"
+guideme-mc1211 = "7127444"
+
+[libraries]
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j-api" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+
+kff-mc1201 = { module = "thedarkcolour:kotlinforforge", version.ref = "kff-mc1201" }
+kff-mc1211 = { module = "thedarkcolour:kotlinforforge-neoforge", version.ref = "kff-mc1211" }
+
+mekanism-mc1201 = { module = "mekanism:Mekanism", version.ref = "mekanism-mc1201" }
+mekanism-mc1211 = { module = "mekanism:Mekanism", version.ref = "mekanism-mc1211" }
+
+tmrv-mc1201 = { module = "curse.maven:tmrv-1194921", version.ref = "tmrv-mc1201" }
+tmrv-mc1211 = { module = "curse.maven:tmrv-1194921", version.ref = "tmrv-mc1211" }
+
+emi-mc1201 = { module = "maven.modrinth:emi", version.ref = "emi-mc1201" }
+emi-mc1211 = { module = "maven.modrinth:emi", version.ref = "emi-mc1211" }
+
+jade-mc1201 = { module = "curse.maven:jade-324717", version.ref = "jade-mc1201" }
+jade-mc1211 = { module = "curse.maven:jade-324717", version.ref = "jade-mc1211" }
+
+replication-mc1201 = { module = "curse.maven:replication-638351", version.ref = "replication-mc1201" }
+replication-mc1211 = { module = "curse.maven:replication-638351", version.ref = "replication-mc1211" }
+
+titanium-mc1201 = { module = "curse.maven:titanium-287342", version.ref = "titanium-mc1201" }
+titanium-mc1211 = { module = "com.hrznstudio:titanium", version.ref = "titanium-mc1211" }
+
+guideme-mc1201 = { module = "curse.maven:guideme-1173950", version.ref = "guideme-mc1201" }
+guideme-mc1211 = { module = "curse.maven:guideme-1173950", version.ref = "guideme-mc1211" }
+
+ae2-mc1201 = { module = "appeng:appliedenergistics2-forge", version.ref = "ae2-mc1201" }
+ae2-mc1211 = { module = "org.appliedenergistics:appliedenergistics2", version.ref = "ae2-mc1211" }
+
+aae-mc1201 = { module = "curse.maven:advancedae-1084104", version.ref = "aae-mc1201"}
+ae2addonlib-mc1201 = { module = "curse.maven:ae2addonlib-1366135" ,version.ref = "ae2addonlib-mc1201" }
+geckolib-mc1201 = { module = "curse.maven:geckolib-388172", version.ref = "geckolib-mc1201" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

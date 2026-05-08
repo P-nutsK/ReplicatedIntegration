@@ -5,35 +5,36 @@ plugins {
     kotlin("jvm")
 }
 
-val mekanismVersion1_20_1: String by project
-val kotlinForForgeVersion1_20_1: String by project
-val emiVersion1_20_1: String by project
-val jadeFileId1_20_1: String by project
-val replicationVersion1_20_1: String by project
-val titaniumVersion1_20_1: String by project
-val ae2Version1_20_1: String by project
-
 // Mod Dependencies
 dependencies {
-    modImplementation("thedarkcolour:kotlinforforge:$kotlinForForgeVersion1_20_1")
+    fun mekclassifier(name: String) = variantOf(libs.mekanism.mc1201) {
+        classifier(name)
+    }
 
-    modImplementation("curse.maven:replication-638351:$replicationVersion1_20_1")
-    modImplementation("curse.maven:titanium-287342:$titaniumVersion1_20_1")
-    modImplementation("appeng:appliedenergistics2-forge:$ae2Version1_20_1")
+    modImplementation(libs.kff.mc1201)
+    modImplementation(libs.replication.mc1201)
+    modImplementation(libs.titanium.mc1201)
+    modImplementation(libs.ae2.mc1201)
+    modImplementation(libs.aae.mc1201)
+    // aaeについてくる
+    modCompileOnly(libs.ae2addonlib.mc1201)
+    // aaeに不可欠
+    modRuntimeOnly(libs.geckolib.mc1201)
 
     // developer dependency
-    modRuntimeOnly("curse.maven:tmrv-1194921:7983491")
-    modRuntimeOnly("maven.modrinth:emi:$emiVersion1_20_1")
+    modRuntimeOnly(libs.tmrv.mc1201)
+    modRuntimeOnly(libs.emi.mc1201)
+    modRuntimeOnly(libs.jade.mc1201)
 
-    modRuntimeOnly("curse.maven:jade-324717:$jadeFileId1_20_1")
     // ae2 dependency
-    modRuntimeOnly("curse.maven:guideme-1173950:7127447")
+    modRuntimeOnly(libs.guideme.mc1201)
 
-    modCompileOnly("mekanism:Mekanism:$mekanismVersion1_20_1:api")
-    modRuntimeOnly("mekanism:Mekanism:$mekanismVersion1_20_1")
-    modRuntimeOnly("mekanism:Mekanism:$mekanismVersion1_20_1:additions")
-    modRuntimeOnly("mekanism:Mekanism:$mekanismVersion1_20_1:generators")
-    modRuntimeOnly("mekanism:Mekanism:$mekanismVersion1_20_1:tools")
+    modCompileOnly(mekclassifier("api"))
+    modRuntimeOnly(libs.mekanism.mc1201)
+
+    modRuntimeOnly(mekclassifier("additions"))
+    modRuntimeOnly(mekclassifier("generators"))
+    modRuntimeOnly(mekclassifier("tools"))
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -48,6 +49,6 @@ val syncDevLaunchResources = tasks.register<Sync>("syncDevLaunchResources") {
     into(layout.buildDirectory.dir("sourceSets/main"))
 }
 
-tasks.withType<org.gradle.language.jvm.tasks.ProcessResources>().configureEach {
+tasks.withType<ProcessResources>().configureEach {
     finalizedBy(syncDevLaunchResources)
 }

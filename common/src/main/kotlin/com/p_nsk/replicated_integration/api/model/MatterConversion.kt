@@ -10,10 +10,10 @@ data class MatterConversion(
     // our Recipe Id
     val id: LiteResourceLocation,
     //
-    val consumes: List<MatterAmount>,
-    val produces: MatterAmount,
+    val consumes: List<NodeAmount>,
+    val produces: NodeAmount,
     // 副産物の分の差し引き
-    val credits: List<MatterAmount> = emptyList(),
+    val credits: List<NodeAmount> = emptyList(),
     // This is not general recipe metadata; it exists specifically so the solver can reject
     // re-entering the same reversible conversion pair within a single derivation chain.
     val loopGuardKey: LiteResourceLocation? = null,

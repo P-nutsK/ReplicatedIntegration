@@ -9,7 +9,7 @@ import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
 import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.NodeKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.packs.resources.ResourceManager
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener
@@ -18,16 +18,16 @@ import net.minecraft.util.profiling.ProfilerFiller
 
 object MatterNodeValueReloadListener : SimpleJsonResourceReloadListener(Gson(), "replicated_integration/matter_node_values") {
     @Volatile
-    private var values: Map<MatterNodeKey, ExplicitMatterValue> = emptyMap()
+    private var values: Map<NodeKey, ExplicitMatterValue> = emptyMap()
 
-    fun snapshot(): Map<MatterNodeKey, ExplicitMatterValue> = values
+    fun snapshot(): Map<NodeKey, ExplicitMatterValue> = values
 
     override fun apply(
         objects: Map<ResourceLocation, JsonElement>,
         resourceManager: ResourceManager,
         profiler: ProfilerFiller,
     ) {
-        val parsed = linkedMapOf<MatterNodeKey, ExplicitMatterValue>()
+        val parsed = linkedMapOf<NodeKey, ExplicitMatterValue>()
 
         for ((fileId, jsonElement) in objects) {
             try {
@@ -66,7 +66,7 @@ object MatterNodeValueReloadListener : SimpleJsonResourceReloadListener(Gson(), 
 
         require(values.isNotEmpty()) { "matter must not be empty in $fileId" }
         return ParsedEntry(
-            node = MatterNodeKey(
+            node = NodeKey(
                 LiteResourceLocation.of(type.namespace, type.path),
                 LiteResourceLocation.of(id.namespace, id.path),
             ),
@@ -80,7 +80,7 @@ object MatterNodeValueReloadListener : SimpleJsonResourceReloadListener(Gson(), 
     }
 
     private data class ParsedEntry(
-        val node: MatterNodeKey,
+        val node: NodeKey,
         val compound: LiteMatterCompound,
     )
 }

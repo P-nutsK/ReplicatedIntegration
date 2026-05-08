@@ -1,7 +1,7 @@
 package com.p_nsk.replicated_integration.data
 
 import com.buuz135.replication.calculation.ReplicationCalculation
-import com.p_nsk.replicated_integration.bridge.NeoReplicationCalculationService
+import com.p_nsk.replicated_integration.core.NeoReplicationCalculationService
 import net.neoforged.bus.api.SubscribeEvent
 import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.server.ServerStartedEvent

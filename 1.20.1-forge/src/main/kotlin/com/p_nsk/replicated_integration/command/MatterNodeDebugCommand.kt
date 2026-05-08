@@ -3,14 +3,14 @@ package com.p_nsk.replicated_integration.command
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
-import com.p_nsk.replicated_integration.bridge.ForgeReplicationCalculationService
+import com.p_nsk.replicated_integration.core.ForgeReplicationCalculationService
 import com.p_nsk.replicated_integration.api.graph.ConversionGraph
 import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.model.MatterConversion
 import com.p_nsk.replicated_integration.api.node.MatterNodeFormatter
-import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.NodeKey
 import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -62,13 +62,13 @@ object MatterNodeDebugCommand {
     private fun describeExplicitNode(context: CommandContext<CommandSourceStack>): Int {
         val type = parseId(context, "type") ?: return 0
         val id = parseId(context, "id") ?: return 0
-        return describeNode(context.source, MatterNodeKey(type, id))
+        return describeNode(context.source, NodeKey(type, id))
     }
 
     private fun traceExplicitNode(context: CommandContext<CommandSourceStack>, depth: Int): Int {
         val type = parseId(context, "type") ?: return 0
         val id = parseId(context, "id") ?: return 0
-        return traceNode(context.source, MatterNodeKey(type, id), depth)
+        return traceNode(context.source, NodeKey(type, id), depth)
     }
 
     @Suppress("RedundantNullableReturnType")
@@ -77,7 +77,7 @@ object MatterNodeDebugCommand {
         return LiteResourceLocation.of(parsed.namespace, parsed.path)
     }
 
-    private fun describeNode(source: CommandSourceStack, node: MatterNodeKey): Int {
+    private fun describeNode(source: CommandSourceStack, node: NodeKey): Int {
         if (MatterNodeDebugCache.isEmpty()) {
             source.sendFailure(
                 Component.literal("No matter node data is cached yet. Trigger a data reload or join a loaded world first.")
@@ -117,7 +117,7 @@ object MatterNodeDebugCommand {
         return 1
     }
 
-    private fun traceNode(source: CommandSourceStack, node: MatterNodeKey, depth: Int): Int {
+    private fun traceNode(source: CommandSourceStack, node: NodeKey, depth: Int): Int {
         if (MatterNodeDebugCache.isEmpty()) {
             source.sendFailure(Component.literal("No matter node data is cached yet. Trigger a data reload or join a loaded world first."))
             return 0
@@ -125,7 +125,7 @@ object MatterNodeDebugCommand {
 
         val solved = MatterNodeDebugCache.solved()
         val graph = MatterNodeDebugCache.graph()
-        val seen = linkedSetOf<MatterNodeKey>()
+        val seen = linkedSetOf<NodeKey>()
         source.sendSuccess(
             {
                 Component.literal("Trace for ")
@@ -140,12 +140,12 @@ object MatterNodeDebugCommand {
 
     private fun emitTrace(
         source: CommandSourceStack,
-        node: MatterNodeKey,
+        node: NodeKey,
         depth: Int,
         indent: Int,
         graph: ConversionGraph,
-        solved: Map<MatterNodeKey, LiteMatterCompound>,
-        seen: MutableSet<MatterNodeKey>,
+        solved: Map<NodeKey, LiteMatterCompound>,
+        seen: MutableSet<NodeKey>,
     ) {
         val prefix = " ".repeat(indent * 2)
         val label = MatterNodeFormatter.formatNode(node, ForgeReplicationCalculationService.nodeTypes())
@@ -195,7 +195,7 @@ object MatterNodeDebugCommand {
         source: CommandSourceStack,
         conversion: MatterConversion,
         indent: Int,
-        solved: Map<MatterNodeKey, LiteMatterCompound>,
+        solved: Map<NodeKey, LiteMatterCompound>,
     ) {
         val prefix = " ".repeat(indent * 2)
         val candidate = evaluateCandidate(conversion, solved)
@@ -240,7 +240,7 @@ object MatterNodeDebugCommand {
 
     private fun evaluateCandidate(
         conversion: MatterConversion,
-        solved: Map<MatterNodeKey, LiteMatterCompound>,
+        solved: Map<NodeKey, LiteMatterCompound>,
     ): LiteMatterCompound? {
         var result = LiteMatterCompound.EMPTY
         for (consume in conversion.consumes) {
@@ -254,7 +254,7 @@ object MatterNodeDebugCommand {
         return result.divide(conversion.produces.amount.toDouble())
     }
 
-    private fun buildSummary(node: MatterNodeKey, compound: LiteMatterCompound): MutableComponent =
+    private fun buildSummary(node: NodeKey, compound: LiteMatterCompound): MutableComponent =
         Component.literal("Matter for ")
             .append(
                 Component.literal(MatterNodeFormatter.formatNode(node, ForgeReplicationCalculationService.nodeTypes()))

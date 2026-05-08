@@ -6,17 +6,19 @@ import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.model.MatterAmount
+import com.p_nsk.replicated_integration.api.model.NodeAmount
 import com.p_nsk.replicated_integration.api.node.MatterNodes
 import com.p_nsk.replicated_integration.api.node.MutableMatterDefaults
 import com.p_nsk.replicated_integration.api.selector.MutableMatterSelectors
 import com.p_nsk.replicated_integration.api.graph.RecipeConversionMapper
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddon
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonEnvironment
+import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
+import com.p_nsk.replicated_integration.api.model.InputNodes
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKind
-import com.p_nsk.replicated_integration.bridge.ForgeRecipeConversionSupport
-import com.p_nsk.replicated_integration.bridge.ForgeReplicationAddonContext
+import com.p_nsk.replicated_integration.core.ForgeRecipeConversionSupport
+import com.p_nsk.replicated_integration.core.ForgeReplicationAddonContext
 import com.p_nsk.replicated_integration.data.MatterNodeValueReloadListener
 import com.p_nsk.replicated_integration.mixin.IngredientAccessor
 import com.p_nsk.replicated_integration.recipe.replicatedIntegrationDenied
@@ -34,6 +36,7 @@ import net.minecraft.world.item.crafting.SmokingRecipe
 import net.minecraft.world.item.crafting.StonecutterRecipe
 import net.minecraft.world.item.Item
 
+@OptIn(ReplicationAddonLoadSafetyContract::class)
 object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> {
     override val id: String = "vanilla"
 
@@ -81,19 +84,26 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
             for (stack in recipe.input.items) {
                 val itemNode = BuiltinNodeResolver.itemNode(stack) ?: continue
                 if (recipe.replicatedIntegrationDenied) {
-                    selectors.deny(MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id), ExplicitMatterSource.DATAPACK)
+                    selectors.deny(
+                        MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id),
+                        ExplicitMatterSource.DATAPACK
+                    )
                     continue
                 }
                 val compound = recipe.matter.toLiteMatterCompound() ?: continue
-                selectors.put(MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id), compound, ExplicitMatterSource.DATAPACK)
+                selectors.put(
+                    MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id),
+                    compound,
+                    ExplicitMatterSource.DATAPACK
+                )
             }
         }
     }
 
-    private fun Ingredient.toAlternativeMatterAmounts(): List<MatterAmount> =
-        ForgeRecipeConversionSupport.ingredientToAlternativeMatterAmounts(this, BuiltinNodeResolver::itemNode)
+    private fun Ingredient.toInputNode(): InputNodes =
+        ForgeRecipeConversionSupport.ingredientToInputNode(this, BuiltinNodeResolver::itemNode)
 
-    private fun ItemStack.toItemMatterAmount(): MatterAmount? =
+    private fun ItemStack.toItemMatterAmount(): NodeAmount? =
         BuiltinNodeResolver.itemAmount(this)
 
     private fun Array<MatterValue>.toLiteMatterCompound(): LiteMatterCompound? {
@@ -120,30 +130,30 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
                     recipe.id,
                     recipe.ingredients
                         .filterNot(Ingredient::isEmpty)
-                        .map { it.toAlternativeMatterAmounts() },
+                        .map { it.toInputNode() },
                     output,
                     ::craftingCredits,
                 )
             },
             singleOutputMapper<SmeltingRecipe>(context) { recipe ->
                 val output = recipe.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstInputNode()), output)
             },
             singleOutputMapper<BlastingRecipe>(context) { recipe ->
                 val output = recipe.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstInputNode()), output)
             },
             singleOutputMapper<SmokingRecipe>(context) { recipe ->
                 val output = recipe.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstInputNode()), output)
             },
             singleOutputMapper<CampfireCookingRecipe>(context) { recipe ->
                 val output = recipe.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstInputNode()), output)
             },
             singleOutputMapper<StonecutterRecipe>(context) { recipe ->
                 val output = recipe.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                ConversionInputs(recipe.id, listOf(recipe.ingredients.firstInputNode()), output)
             },
         )
 
@@ -157,7 +167,10 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
             ?.asString
             ?.let(ResourceLocation::parse)
             ?.let { itemId ->
-                MatterSelectorKey(MatterSelectorKind.NODE, MatterNodes.ITEM, ForgeRecipeConversionSupport.run { itemId.toLite() })
+                MatterSelectorKey(
+                    MatterSelectorKind.NODE,
+                    MatterNodes.ITEM,
+                    ForgeRecipeConversionSupport.run { itemId.toLite() })
             }
 
     private fun Ingredient.explicitDefaultTagSelectorOrNull() =
@@ -167,7 +180,10 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
             ?.asString
             ?.let(ResourceLocation::parse)
             ?.let { tagId ->
-                MatterSelectorKey(MatterSelectorKind.TAG, MatterNodes.ITEM, ForgeRecipeConversionSupport.run { tagId.toLite() })
+                MatterSelectorKey(
+                    MatterSelectorKind.TAG,
+                    MatterNodes.ITEM,
+                    ForgeRecipeConversionSupport.run { tagId.toLite() })
             }
 
     private inline fun <reified R : Recipe<*>> singleOutputMapper(
@@ -180,9 +196,9 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
             @Suppress("UNCHECKED_CAST")
             override fun collect(recipe: Recipe<*>, collector: IConversionSink) {
                 val inputs = context.extractor(recipe as R) ?: return
-                ForgeRecipeConversionSupport.addConversionsForAlternatives(
+                ForgeRecipeConversionSupport.addConversion(
                     id = inputs.id,
-                    consumeAlternatives = inputs.consumeAlternatives,
+                    consumeInputNodes = inputs.consumeAlternatives,
                     produces = inputs.produces,
                     creditsOf = inputs.creditsOf,
                     collector = collector,
@@ -190,7 +206,7 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
             }
         }
 
-    private fun craftingCredits(consumes: List<MatterAmount>): List<MatterAmount> =
+    private fun craftingCredits(consumes: List<NodeAmount>): List<NodeAmount> =
         consumes
             .mapNotNull { consume ->
                 if (consume.node.type != MatterNodes.ITEM) {
@@ -199,10 +215,10 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
                 val item = itemById(consume.node.id) ?: return@mapNotNull null
                 val remainder = item.craftingRemainingItem ?: return@mapNotNull null
                 val remainderNode = BuiltinNodeResolver.itemNode(ItemStack(remainder)) ?: return@mapNotNull null
-                MatterAmount(remainderNode, consume.amount)
+                NodeAmount(remainderNode, consume.amount)
             }
             .groupBy { it.node }
-            .map { (node, amounts) -> MatterAmount(node, amounts.sumOf { it.amount }) }
+            .map { (node, amounts) -> NodeAmount(node, amounts.sumOf { it.amount }) }
             .sortedBy { it.node }
 
     private fun itemById(id: LiteResourceLocation): Item? {
@@ -211,13 +227,16 @@ object ReplicationVanillaAddon : ReplicationAddon<ForgeReplicationAddonContext> 
         return item.takeUnless { it == net.minecraft.world.item.Items.AIR }
     }
 
+    private fun List<Ingredient>.firstInputNode(): InputNodes =
+        firstOrNull()?.toInputNode() ?: InputNodes.empty()
+
     private fun ResourceLocation.toLite(): LiteResourceLocation =
         ForgeRecipeConversionSupport.run { toLite() }
 
     private data class ConversionInputs(
         val id: ResourceLocation,
-        val consumeAlternatives: List<List<MatterAmount>>,
-        val produces: MatterAmount,
-        val creditsOf: (List<MatterAmount>) -> List<MatterAmount> = { emptyList() },
+        val consumeAlternatives: List<InputNodes>,
+        val produces: NodeAmount,
+        val creditsOf: (List<NodeAmount>) -> List<NodeAmount> = { emptyList() },
     )
 }

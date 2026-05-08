@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "2.3.0" apply false
+    alias(libs.plugins.kotlin.jvm) apply false
     id("net.fabricmc.fabric-loom") apply false
     id("net.fabricmc.fabric-loom-remap") apply false
     id("net.neoforged.moddev") apply false

@@ -20,25 +20,25 @@ object MatterNodes {
     val SLURRY = LiteResourceLocation.of("mekanism", "slurry")
 
     @JvmStatic
-    fun item(id: LiteResourceLocation) = MatterNodeKey(ITEM, id)
+    fun item(id: LiteResourceLocation) = NodeKey(ITEM, id)
 
     @JvmStatic
-    fun fluid(id: LiteResourceLocation) = MatterNodeKey(FLUID, id)
+    fun fluid(id: LiteResourceLocation) = NodeKey(FLUID, id)
 
     @JvmStatic
-    fun chemical(id: LiteResourceLocation) = MatterNodeKey(CHEMICAL, id)
+    fun chemical(id: LiteResourceLocation) = NodeKey(CHEMICAL, id)
 
     @JvmStatic
-    fun gas(id: LiteResourceLocation) = MatterNodeKey(GAS, id)
+    fun gas(id: LiteResourceLocation) = NodeKey(GAS, id)
 
     @JvmStatic
-    fun infuseType(id: LiteResourceLocation) = MatterNodeKey(INFUSE_TYPE, id)
+    fun infuseType(id: LiteResourceLocation) = NodeKey(INFUSE_TYPE, id)
 
     @JvmStatic
-    fun pigment(id: LiteResourceLocation) = MatterNodeKey(PIGMENT, id)
+    fun pigment(id: LiteResourceLocation) = NodeKey(PIGMENT, id)
 
     @JvmStatic
-    fun slurry(id: LiteResourceLocation) = MatterNodeKey(SLURRY, id)
+    fun slurry(id: LiteResourceLocation) = NodeKey(SLURRY, id)
 
     @JvmStatic
     fun builtinTypes(): List<MatterNodeTypeDef> =

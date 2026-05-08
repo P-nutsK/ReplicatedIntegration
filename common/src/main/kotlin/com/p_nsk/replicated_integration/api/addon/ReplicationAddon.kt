@@ -8,7 +8,7 @@ import com.p_nsk.replicated_integration.api.selector.MutableMatterSelectors
 interface ReplicationAddonEnvironment {
     fun isModLoaded(modId: String): Boolean
 }
-
+@ReplicationAddonLoadSafetyContract
 interface ReplicationAddon<C> {
     val id: String
 

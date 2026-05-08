@@ -4,15 +4,15 @@ import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.model.MatterConversion
-import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.NodeKey
 
 class SimpleConversionSolver(
     private val maxIterations: Int = 256,
 ) {
     fun solve(
         graph: ConversionGraph,
-        explicitValues: Map<MatterNodeKey, ExplicitMatterValue>,
-    ): Map<MatterNodeKey, LiteMatterCompound> {
+        explicitValues: Map<NodeKey, ExplicitMatterValue>,
+    ): Map<NodeKey, LiteMatterCompound> {
         val denied = explicitValues
             .filterValues { it is ExplicitMatterValue.Deny }
             .keys
@@ -67,9 +67,9 @@ class SimpleConversionSolver(
 
     private fun evaluateConsumes(
         conversion: MatterConversion,
-        known: Map<MatterNodeKey, SolvedCandidate>,
+        known: Map<NodeKey, SolvedCandidate>,
     ): EvaluatedConsumes? {
-        var result = LiteMatterCompound.Companion.EMPTY
+        var result = LiteMatterCompound.EMPTY
         var usedLoopGuards = emptySet<LiteResourceLocation>()
 
         for (consume in conversion.consumes) {
@@ -87,7 +87,7 @@ class SimpleConversionSolver(
     private fun applyCredits(
         consumedValue: EvaluatedConsumes,
         conversion: MatterConversion,
-        known: Map<MatterNodeKey, SolvedCandidate>,
+        known: Map<NodeKey, SolvedCandidate>,
     ): LiteMatterCompound {
         var credited = consumedValue.value
         for (credit in conversion.credits) {

@@ -3,38 +3,31 @@ package com.p_nsk.replicated_integration.adapter.vanilla
 import com.buuz135.replication.ReplicationRegistry
 import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.recipe.MatterValueRecipe
-import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
-import com.p_nsk.replicated_integration.api.graph.IConversionSink
-import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
-import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.model.MatterAmount
-import com.p_nsk.replicated_integration.api.node.MatterNodes
-import com.p_nsk.replicated_integration.api.node.MutableMatterDefaults
-import com.p_nsk.replicated_integration.api.selector.MutableMatterSelectors
-import com.p_nsk.replicated_integration.api.graph.RecipeConversionMapper
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddon
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonEnvironment
+import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
+import com.p_nsk.replicated_integration.api.graph.IConversionSink
+import com.p_nsk.replicated_integration.api.graph.RecipeConversionMapper
+import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
+import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
+import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
+import com.p_nsk.replicated_integration.api.model.NodeAmount
+import com.p_nsk.replicated_integration.api.node.MatterNodes
+import com.p_nsk.replicated_integration.api.node.MutableMatterDefaults
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKind
-import com.p_nsk.replicated_integration.bridge.NeoRecipeConversionSupport
-import com.p_nsk.replicated_integration.bridge.NeoReplicationAddonContext
+import com.p_nsk.replicated_integration.api.selector.MutableMatterSelectors
+import com.p_nsk.replicated_integration.core.NeoRecipeConversionSupport
+import com.p_nsk.replicated_integration.core.NeoReplicationAddonContext
 import com.p_nsk.replicated_integration.data.MatterNodeValueReloadListener
 import com.p_nsk.replicated_integration.recipe.replicatedIntegrationDenied
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.Item
 import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.crafting.BlastingRecipe
-import net.minecraft.world.item.crafting.CampfireCookingRecipe
-import net.minecraft.world.item.crafting.CraftingRecipe
-import net.minecraft.world.item.crafting.Ingredient
-import net.minecraft.world.item.crafting.Recipe
-import net.minecraft.world.item.crafting.RecipeHolder
-import net.minecraft.world.item.crafting.RecipeType
-import net.minecraft.world.item.crafting.SmeltingRecipe
-import net.minecraft.world.item.crafting.SmokingRecipe
-import net.minecraft.world.item.crafting.StonecutterRecipe
+import net.minecraft.world.item.crafting.*
 
+@OptIn(ReplicationAddonLoadSafetyContract::class)
 object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
     override val id: String = "vanilla"
 
@@ -91,10 +84,10 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
         }
     }
 
-    private fun Ingredient.toAlternativeMatterAmounts(): List<MatterAmount> =
+    private fun Ingredient.toAlternativeMatterAmounts(): List<NodeAmount> =
         NeoRecipeConversionSupport.ingredientToAlternativeMatterAmounts(this, BuiltinNodeResolver::itemNode)
 
-    private fun ItemStack.toItemMatterAmount(): MatterAmount? =
+    private fun ItemStack.toItemMatterAmount(): NodeAmount? =
         BuiltinNodeResolver.itemAmount(this)
 
     private fun List<MatterValue>.toLiteMatterCompound(): LiteMatterCompound? {
@@ -181,7 +174,7 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
             }
         }
 
-    private fun craftingCredits(consumes: List<MatterAmount>): List<MatterAmount> =
+    private fun craftingCredits(consumes: List<NodeAmount>): List<NodeAmount> =
         consumes
             .mapNotNull { consume ->
                 if (consume.node.type != MatterNodes.ITEM) {
@@ -190,10 +183,10 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
                 val item = itemById(consume.node.id) ?: return@mapNotNull null
                 val remainder = item.craftingRemainingItem ?: return@mapNotNull null
                 val remainderNode = BuiltinNodeResolver.itemNode(ItemStack(remainder)) ?: return@mapNotNull null
-                MatterAmount(remainderNode, consume.amount)
+                NodeAmount(remainderNode, consume.amount)
             }
             .groupBy { it.node }
-            .map { (node, amounts) -> MatterAmount(node, amounts.sumOf { it.amount }) }
+            .map { (node, amounts) -> NodeAmount(node, amounts.sumOf { it.amount }) }
             .sortedBy { it.node }
 
     private fun itemById(id: LiteResourceLocation): Item? {
@@ -207,8 +200,8 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
 
     private data class ConversionInputs(
         val id: ResourceLocation,
-        val consumeAlternatives: List<List<MatterAmount>>,
-        val produces: MatterAmount,
-        val creditsOf: (List<MatterAmount>) -> List<MatterAmount> = { emptyList() },
+        val consumeAlternatives: List<List<NodeAmount>>,
+        val produces: NodeAmount,
+        val creditsOf: (List<NodeAmount>) -> List<NodeAmount> = { emptyList() },
     )
 }

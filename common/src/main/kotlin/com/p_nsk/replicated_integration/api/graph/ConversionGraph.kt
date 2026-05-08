@@ -1,18 +1,18 @@
 package com.p_nsk.replicated_integration.api.graph
 
 import com.p_nsk.replicated_integration.api.model.MatterConversion
-import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.NodeKey
 
 class ConversionGraph(
     val conversions: List<MatterConversion>,
 ) {
-    val byOutputsNode: Map<MatterNodeKey, List<MatterConversion>> =
+    val byOutputsNode: Map<NodeKey, List<MatterConversion>> =
         conversions
             .map { conversion -> conversion.produces.node to conversion }
             .groupBy({ it.first }, { it.second })
 
     @Suppress("unused")
-    val byInputsNode: Map<MatterNodeKey, List<MatterConversion>> =
+    val byInputsNode: Map<NodeKey, List<MatterConversion>> =
         conversions
             .flatMap { conversion ->
                 conversion.consumes.map { consumed ->

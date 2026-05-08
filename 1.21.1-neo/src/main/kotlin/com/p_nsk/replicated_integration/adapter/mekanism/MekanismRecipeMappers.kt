@@ -1,11 +1,11 @@
 package com.p_nsk.replicated_integration.adapter.mekanism
 
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
-import com.p_nsk.replicated_integration.api.model.MatterAmount
+import com.p_nsk.replicated_integration.api.model.NodeAmount
 import com.p_nsk.replicated_integration.api.graph.RecipeConversionMapper
 import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
-import com.p_nsk.replicated_integration.api.node.MatterNodeKey
-import com.p_nsk.replicated_integration.bridge.NeoRecipeConversionSupport
+import com.p_nsk.replicated_integration.api.node.NodeKey
+import com.p_nsk.replicated_integration.core.NeoRecipeConversionSupport
 import mekanism.api.chemical.ChemicalStack
 import mekanism.api.recipes.ChemicalChemicalToChemicalRecipe
 import mekanism.api.recipes.ChemicalCrystallizerRecipe
@@ -201,8 +201,8 @@ object MekanismRecipeMappers {
 
     private fun build(
         id: ResourceLocation,
-        consumeAlternatives: List<List<MatterAmount>>,
-        produces: MatterAmount?,
+        consumeAlternatives: List<List<NodeAmount>>,
+        produces: NodeAmount?,
     ): ConversionInputs? =
         produces?.let { ConversionInputs(id, consumeAlternatives, it) }
 
@@ -225,20 +225,20 @@ object MekanismRecipeMappers {
             }
         }
 
-    private fun ItemStackIngredient.toAlternativeMatterAmounts(): List<MatterAmount> =
+    private fun ItemStackIngredient.toAlternativeMatterAmounts(): List<NodeAmount> =
         ingredientToAlternativeMatterAmounts(
             ingredient = this as InputIngredient<ItemStack>,
             nodeOf = BuiltinNodeResolver::itemNode,
         )
 
-    private fun FluidStackIngredient.toAlternativeMatterAmounts(): List<MatterAmount> =
+    private fun FluidStackIngredient.toAlternativeMatterAmounts(): List<NodeAmount> =
         ingredientToAlternativeMatterAmounts(
             ingredient = this as InputIngredient<FluidStack>,
             nodeOf = BuiltinNodeResolver::fluidNode,
         )
 
     @Suppress("UNCHECKED_CAST")
-    private fun ChemicalStackIngredient.toAlternativeMatterAmounts(scale: Long = 1L): List<MatterAmount> =
+    private fun ChemicalStackIngredient.toAlternativeMatterAmounts(scale: Long = 1L): List<NodeAmount> =
         ingredientToAlternativeMatterAmounts(
             ingredient = this as InputIngredient<ChemicalStack>,
             nodeOf = MekanismNodeResolver::chemicalNode,
@@ -247,16 +247,16 @@ object MekanismRecipeMappers {
 
     private fun <T> ingredientToAlternativeMatterAmounts(
         ingredient: InputIngredient<T>,
-        nodeOf: (T) -> MatterNodeKey?,
+        nodeOf: (T) -> NodeKey?,
         scale: Long = 1L,
-    ): List<MatterAmount> =
+    ): List<NodeAmount> =
         ingredient.representations.mapNotNull { representation ->
             val node = nodeOf(representation) ?: return@mapNotNull null
             val needed = ingredient.getNeededAmount(representation) * scale
             if (needed <= 0) {
                 null
             } else {
-                MatterAmount(node, needed)
+                NodeAmount(node, needed)
             }
         }
 
@@ -267,7 +267,7 @@ object MekanismRecipeMappers {
             1L
         }
 
-    private fun <T> List<T>.singleMatterAmountOrNull(mapper: (T) -> MatterAmount?): MatterAmount? =
+    private fun <T> List<T>.singleMatterAmountOrNull(mapper: (T) -> NodeAmount?): NodeAmount? =
         singleOrNull()?.let(mapper)
 
     private fun ResourceLocation.withSuffix(suffix: String): ResourceLocation =
@@ -278,8 +278,8 @@ object MekanismRecipeMappers {
 
     private data class ConversionInputs(
         val id: ResourceLocation,
-        val consumeAlternatives: List<List<MatterAmount>>,
-        val produces: MatterAmount,
-        val creditsOf: (List<MatterAmount>) -> List<MatterAmount> = { emptyList() },
+        val consumeAlternatives: List<List<NodeAmount>>,
+        val produces: NodeAmount,
+        val creditsOf: (List<NodeAmount>) -> List<NodeAmount> = { emptyList() },
     )
 }

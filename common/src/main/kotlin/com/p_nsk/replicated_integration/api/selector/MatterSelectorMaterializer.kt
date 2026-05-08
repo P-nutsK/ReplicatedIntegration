@@ -2,18 +2,18 @@ package com.p_nsk.replicated_integration.api.selector
 
 import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.NodeKey
 
 object MatterSelectorMaterializer {
     fun materialize(
         selectors: Map<MatterSelectorKey, ExplicitMatterValue>,
-        expandTag: (type: LiteResourceLocation, id: LiteResourceLocation) -> Iterable<MatterNodeKey>,
-    ): Map<MatterNodeKey, ExplicitMatterValue> {
-        val values = linkedMapOf<MatterNodeKey, AppliedValue>()
+        expandTag: (type: LiteResourceLocation, id: LiteResourceLocation) -> Iterable<NodeKey>,
+    ): Map<NodeKey, ExplicitMatterValue> {
+        val values = linkedMapOf<NodeKey, AppliedValue>()
         for ((selector, explicitValue) in selectors.entries.sortedBy { it.key }) {
             val targets =
                 when (selector.selector) {
-                    MatterSelectorKind.NODE -> listOf(MatterNodeKey(selector.type, selector.id))
+                    MatterSelectorKind.NODE -> listOf(NodeKey(selector.type, selector.id))
                     MatterSelectorKind.TAG -> expandTag(selector.type, selector.id).toList()
                 }
             val specificity =

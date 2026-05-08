@@ -9,8 +9,8 @@ repositories {
 
 dependencies {
     // Match the oldest supported loader classpath: 1.18.2 resolves slf4j-api to 1.8.0-beta4.
-    compileOnly("org.slf4j:slf4j-api:1.8.0-beta4")
-    api("com.google.code.gson:gson:2.10.1")
+    compileOnly(libs.slf4j.api)
+    api(libs.gson)
     testImplementation(kotlin("test"))
 }
 

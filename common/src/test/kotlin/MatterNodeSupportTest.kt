@@ -2,7 +2,7 @@ package com.p_nsk.replicated_integration.api
 
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.node.MatterNodeFormatter
-import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.NodeKey
 import com.p_nsk.replicated_integration.api.node.MatterNodeTypeDef
 import com.p_nsk.replicated_integration.api.node.MatterNodeTypeRegistry
 import kotlin.test.Test
@@ -20,7 +20,7 @@ class MatterNodeSupportTest {
             )
         )
 
-        val node = MatterNodeKey(
+        val node = NodeKey(
             LiteResourceLocation.of("replicated_integration", "essence"),
             LiteResourceLocation.of("example", "charged"),
         )
@@ -31,7 +31,7 @@ class MatterNodeSupportTest {
     @Test
     fun fallsBackForUnknownNodeType() {
         val registry = MatterNodeTypeRegistry.withDefaults()
-        val node = MatterNodeKey(
+        val node = NodeKey(
             LiteResourceLocation.of("unknown", "type"),
             LiteResourceLocation.of("minecraft", "stone"),
         )

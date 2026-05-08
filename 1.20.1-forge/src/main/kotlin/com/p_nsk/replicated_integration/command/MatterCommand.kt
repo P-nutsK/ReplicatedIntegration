@@ -11,12 +11,12 @@ import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.command.MatterCommandSupport
 import com.p_nsk.replicated_integration.api.node.MatterNodeFormatter
-import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.NodeKey
 import com.p_nsk.replicated_integration.api.node.MatterNodes
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorFormatter
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKind
-import com.p_nsk.replicated_integration.bridge.ForgeReplicationCalculationService
+import com.p_nsk.replicated_integration.core.ForgeReplicationCalculationService
 import com.p_nsk.replicated_integration.data.ForgeMatterConfigOverrides
 import com.p_nsk.replicated_integration.data.ForgeMatterRuntimeOverrides
 import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
@@ -110,7 +110,7 @@ object MatterCommand {
                     )
             )
 
-    private fun itemGetSelector(action: (CommandContext<CommandSourceStack>, MatterNodeKey) -> Int) =
+    private fun itemGetSelector(action: (CommandContext<CommandSourceStack>, NodeKey) -> Int) =
         Commands.literal("item")
             .then(
                 Commands.argument("id", ResourceLocationArgument.id())
@@ -118,14 +118,14 @@ object MatterCommand {
                     .let { applyGetArguments(it, { context -> MatterNodes.item(parseId(context, "id")) }, action) }
             )
 
-    private fun typeGetSelector(action: (CommandContext<CommandSourceStack>, MatterNodeKey) -> Int) =
+    private fun typeGetSelector(action: (CommandContext<CommandSourceStack>, NodeKey) -> Int) =
         Commands.literal("type")
             .then(
                 Commands.argument("nodeType", ResourceLocationArgument.id())
                     .then(
                         Commands.argument("id", ResourceLocationArgument.id())
-                            .executes { context -> action(context, MatterNodeKey(parseId(context, "nodeType"), parseId(context, "id"))) }
-                            .let { applyGetArguments(it, { context -> MatterNodeKey(parseId(context, "nodeType"), parseId(context, "id")) }, action) }
+                            .executes { context -> action(context, NodeKey(parseId(context, "nodeType"), parseId(context, "id"))) }
+                            .let { applyGetArguments(it, { context -> NodeKey(parseId(context, "nodeType"), parseId(context, "id")) }, action) }
                     )
             )
 
@@ -186,8 +186,8 @@ object MatterCommand {
 
     private fun applyGetArguments(
         builder: RequiredArgumentBuilder<CommandSourceStack, *>,
-        nodeOf: (CommandContext<CommandSourceStack>) -> MatterNodeKey,
-        execute: (CommandContext<CommandSourceStack>, MatterNodeKey) -> Int,
+        nodeOf: (CommandContext<CommandSourceStack>) -> NodeKey,
+        execute: (CommandContext<CommandSourceStack>, NodeKey) -> Int,
     ): ArgumentBuilder<CommandSourceStack, *> =
         builder.also { withMatterTypes ->
             MatterCommandSupport.allMatterTypes.forEach { (name, _) ->
@@ -212,7 +212,7 @@ object MatterCommand {
             }
         }
 
-    private fun getNode(context: CommandContext<CommandSourceStack>, node: MatterNodeKey): Int {
+    private fun getNode(context: CommandContext<CommandSourceStack>, node: NodeKey): Int {
         val explicitValue = MatterNodeDebugCache.explicit(node)
         val solvedValue = MatterNodeDebugCache.get(node)
         val label = MatterNodeFormatter.formatNode(node, ForgeReplicationCalculationService.nodeTypes())

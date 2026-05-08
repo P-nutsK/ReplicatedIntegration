@@ -1,10 +1,10 @@
-package com.p_nsk.replicated_integration.bridge
+package com.p_nsk.replicated_integration.core
 
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.model.MatterAmount
+import com.p_nsk.replicated_integration.api.model.NodeAmount
 import com.p_nsk.replicated_integration.api.model.MatterConversion
-import com.p_nsk.replicated_integration.api.node.MatterNodeKey
+import com.p_nsk.replicated_integration.api.node.NodeKey
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
@@ -12,13 +12,13 @@ import net.minecraft.world.item.crafting.Ingredient
 
 object NeoRecipeConversionSupport {
     const val MAX_CONVERSIONS_PER_RECIPE = 256L
-    private val ingredientAlternativesCache = linkedMapOf<String, List<MatterAmount>>()
+    private val ingredientAlternativesCache = linkedMapOf<String, List<NodeAmount>>()
 
     fun addConversion(
         id: ResourceLocation,
-        consumes: List<MatterAmount>,
-        produces: MatterAmount,
-        credits: List<MatterAmount> = emptyList(),
+        consumes: List<NodeAmount>,
+        produces: NodeAmount,
+        credits: List<NodeAmount> = emptyList(),
         loopGuardKey: LiteResourceLocation? = null,
         collector: IConversionSink,
     ) {
@@ -38,9 +38,9 @@ object NeoRecipeConversionSupport {
 
     fun addConversionsForAlternatives(
         id: ResourceLocation,
-        consumeAlternatives: List<List<MatterAmount>>,
-        produces: MatterAmount,
-        creditsOf: (List<MatterAmount>) -> List<MatterAmount> = { emptyList() },
+        consumeAlternatives: List<List<NodeAmount>>,
+        produces: NodeAmount,
+        creditsOf: (List<NodeAmount>) -> List<NodeAmount> = { emptyList() },
         loopGuardKey: LiteResourceLocation? = null,
         collector: IConversionSink,
     ): Boolean {
@@ -64,7 +64,7 @@ object NeoRecipeConversionSupport {
         if (collapsed.size == 1 && collapsed.single().first.size == 1) {
             val (alternatives, multiplier) = collapsed.single()
             val only = alternatives.single()
-            val consumes = listOf(MatterAmount(only.node, only.amount * multiplier))
+            val consumes = listOf(NodeAmount(only.node, only.amount * multiplier))
             addConversion(id, consumes, produces, creditsOf(consumes), loopGuardKey, collector)
             return true
         }
@@ -72,7 +72,7 @@ object NeoRecipeConversionSupport {
         val suffixWidth = combinationCount.toString().length
         var index = 0
 
-        fun visit(depth: Int, selected: MutableList<MatterAmount>) {
+        fun visit(depth: Int, selected: MutableList<NodeAmount>) {
             if (depth == collapsed.size) {
                 val conversionId =
                     if (index == 0) {
@@ -91,7 +91,7 @@ object NeoRecipeConversionSupport {
 
             val (alternatives, multiplier) = collapsed[depth]
             for (alternative in alternatives) {
-                selected += MatterAmount(alternative.node, alternative.amount * multiplier)
+                selected += NodeAmount(alternative.node, alternative.amount * multiplier)
                 visit(depth + 1, selected)
                 selected.removeAt(selected.lastIndex)
             }
@@ -103,8 +103,8 @@ object NeoRecipeConversionSupport {
 
     fun ingredientToAlternativeMatterAmounts(
         ingredient: Ingredient,
-        nodeOf: (ItemStack) -> MatterNodeKey?,
-    ): List<MatterAmount> {
+        nodeOf: (ItemStack) -> NodeKey?,
+    ): List<NodeAmount> {
         val key =
             ingredient.items
                 .joinToString("|") { stack ->
@@ -115,23 +115,23 @@ object NeoRecipeConversionSupport {
                 .mapNotNull { stack ->
                     val node = nodeOf(stack) ?: return@mapNotNull null
                     val amount = stack.count.coerceAtLeast(1)
-                    MatterAmount(node, amount.toLong())
+                    NodeAmount(node, amount.toLong())
                 }
                 .let(::normalizeAlternatives)
         }
     }
 
-    private fun normalizeAlternatives(alternatives: List<MatterAmount>): List<MatterAmount> =
+    private fun normalizeAlternatives(alternatives: List<NodeAmount>): List<NodeAmount> =
         alternatives
             .groupBy { it.node }
             .map { (node, amounts) ->
-                MatterAmount(node, amounts.minOf { it.amount })
+                NodeAmount(node, amounts.minOf { it.amount })
             }
             .sortedBy { it.node }
 
     private fun collapseEquivalentAlternatives(
-        alternatives: List<List<MatterAmount>>,
-    ): List<Pair<List<MatterAmount>, Long>> =
+        alternatives: List<List<NodeAmount>>,
+    ): List<Pair<List<NodeAmount>, Long>> =
         alternatives
             .groupingBy(::alternativesSignature)
             .eachCount()
@@ -146,7 +146,7 @@ object NeoRecipeConversionSupport {
                 candidate.joinToString("|") { "${it.node}:${it.amount}" }
             }
 
-    private fun alternativesSignature(alternatives: List<MatterAmount>): String =
+    private fun alternativesSignature(alternatives: List<NodeAmount>): String =
         alternatives.joinToString("|") { "${it.node}:${it.amount}" }
 
     fun ResourceLocation.toLite(): LiteResourceLocation =
