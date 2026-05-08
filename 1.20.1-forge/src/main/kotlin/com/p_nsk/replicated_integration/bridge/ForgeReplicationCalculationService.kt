@@ -24,6 +24,7 @@ import com.p_nsk.replicated_integration.data.ForgeMatterRuntimeOverrides
 import com.p_nsk.replicated_integration.network.ReplicationCalculationSyncChannel
 import com.p_nsk.replicated_integration.network.ReplicationCalculationSyncPacket
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraftforge.network.PacketDistributor
 import net.minecraftforge.server.ServerLifecycleHooks
@@ -50,8 +51,7 @@ object ForgeReplicationCalculationService {
             )
         )
 
-    fun calculate(): CalculationArtifacts? {
-        val server = ServerLifecycleHooks.getCurrentServer() ?: return null
+    fun prepareSnapshot(server: MinecraftServer): ForgeCalculationSnapshot {
         val context =
             ForgeReplicationAddonContext(
                 recipeManager = server.recipeManager,
@@ -62,12 +62,6 @@ object ForgeReplicationCalculationService {
         val defaults = MutableMatterDefaults()
         val selectors = MutableMatterSelectors()
         val builder = ConversionGraphBuilder()
-
-        Constants.LOGGER.info(
-            "Replication addon calculation starting with {} default recipes and {} active addons",
-            context.defaultMatterRecipes.size,
-            activeAddons.joinToString(",") { it.id },
-        )
 
         for (addon in activeAddons) {
             addon.collectDefaults(context, defaults)
@@ -82,15 +76,29 @@ object ForgeReplicationCalculationService {
         for (addon in activeAddons) {
             addon.collectConversions(context, builder)
         }
-        val graph = builder.build()
+        return ForgeCalculationSnapshot(
+            defaultMatterRecipeCount = context.defaultMatterRecipes.size,
+            activeAddonIds = activeAddons.map { it.id },
+            selectorSnapshot = selectorSnapshot,
+            explicitSnapshot = explicitSnapshot,
+            graph = builder.build(),
+        )
+    }
+
+    fun calculate(snapshot: ForgeCalculationSnapshot): CalculationArtifacts {
+        Constants.LOGGER.info(
+            "Replication addon calculation starting with {} default recipes and {} active addons",
+            snapshot.defaultMatterRecipeCount,
+            snapshot.activeAddonIds.joinToString(","),
+        )
         Constants.LOGGER.info(
             "Replication addon calculation collected {} default nodes and {} conversions",
-            explicitSnapshot.size,
-            graph.conversions.size,
+            snapshot.explicitSnapshot.size,
+            snapshot.graph.conversions.size,
         )
 
-        val solved = SimpleConversionSolver().solve(graph, explicitSnapshot)
-        MatterNodeDebugCache.publish(selectorSnapshot, explicitSnapshot, graph, solved)
+        val solved = SimpleConversionSolver().solve(snapshot.graph, snapshot.explicitSnapshot)
+        MatterNodeDebugCache.publish(snapshot.selectorSnapshot, snapshot.explicitSnapshot, snapshot.graph, solved)
 
         val compounds = LinkedHashMap<String, MatterCompound>()
         for ((node, compound) in solved.entries.sortedBy { it.key }) {
@@ -115,7 +123,7 @@ object ForgeReplicationCalculationService {
 
         Constants.LOGGER.info(
             "Replication addon calculation loaded {} default recipes, resolved {} node values and exported {} item matter compounds",
-            context.defaultMatterRecipes.size,
+            snapshot.defaultMatterRecipeCount,
             solved.size,
             compounds.size,
         )

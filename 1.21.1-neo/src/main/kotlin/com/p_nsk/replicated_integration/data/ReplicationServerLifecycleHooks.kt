@@ -1,7 +1,9 @@
 package com.p_nsk.replicated_integration.data
 
 import com.buuz135.replication.calculation.ReplicationCalculation
+import com.p_nsk.replicated_integration.bridge.NeoReplicationCalculationService
 import net.neoforged.bus.api.SubscribeEvent
+import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.server.ServerStartedEvent
 
 object ReplicationServerLifecycleHooks {
@@ -9,5 +11,11 @@ object ReplicationServerLifecycleHooks {
     fun onServerStarted(event: ServerStartedEvent) {
         ReplicationCalculation.organizeRecipes(event.server.recipeManager, event.server.registryAccess())
         ReplicationCalculation.calculateRecipes(event.server.registryAccess())
+    }
+
+    @SubscribeEvent
+    fun onPlayerLoggedIn(event: PlayerEvent.PlayerLoggedInEvent) {
+        val player = event.entity as? net.minecraft.server.level.ServerPlayer ?: return
+        NeoReplicationCalculationService.syncLatestToPlayer(player)
     }
 }

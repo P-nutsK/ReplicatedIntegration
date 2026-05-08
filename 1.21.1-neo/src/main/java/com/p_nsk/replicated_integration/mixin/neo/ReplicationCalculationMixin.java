@@ -5,9 +5,11 @@ import com.buuz135.replication.calculation.ReplicationCalculation;
 import com.buuz135.replication.api.MatterCalculationStatus;
 import com.p_nsk.replicated_integration.Constants;
 import com.p_nsk.replicated_integration.bridge.CalculationArtifacts;
+import com.p_nsk.replicated_integration.bridge.NeoCalculationSnapshot;
 import com.p_nsk.replicated_integration.bridge.NeoReplicationCalculationService;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,6 +22,7 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.Nullable;
 
 @Mixin(ReplicationCalculation.class)
 public abstract class ReplicationCalculationMixin {
@@ -28,7 +31,11 @@ public abstract class ReplicationCalculationMixin {
         thread.setDaemon(true);
         return thread;
     });
+    private static final Object CALCULATION_LOCK = new Object();
     private static final AtomicLong CALCULATION_GENERATION = new AtomicLong();
+    @Nullable
+    private static PendingCalculation pendingCalculation;
+    private static boolean workerRunning;
 
     @Shadow(remap = false)
     public static HashMap<Item, MatterCompound> DEFAULT_MATTER_COMPOUND;
@@ -48,17 +55,34 @@ public abstract class ReplicationCalculationMixin {
             return;
         }
         STATUS = MatterCalculationStatus.NOT_CALCULATED;
-        final long generation = CALCULATION_GENERATION.incrementAndGet();
-        CALCULATION_EXECUTOR.execute(() -> {
-            Constants.INSTANCE.getLOGGER().info("Replacing Replication calculateRecipes with replicated_integration addon pipeline");
-            CalculationArtifacts artifacts = NeoReplicationCalculationService.INSTANCE.calculate();
-            if (artifacts == null) {
-                Constants.INSTANCE.getLOGGER().warn("Replication addon calculation returned no artifacts");
+        NeoCalculationSnapshot snapshot = NeoReplicationCalculationService.INSTANCE.prepareSnapshot(server);
+        synchronized (CALCULATION_LOCK) {
+            long generation = CALCULATION_GENERATION.incrementAndGet();
+            pendingCalculation = new PendingCalculation(generation, server, snapshot);
+            if (workerRunning) {
                 return;
             }
-            server.execute(() -> {
-                if (generation != CALCULATION_GENERATION.get()) {
-                    Constants.INSTANCE.getLOGGER().info("Skipping stale Neo calculation generation {}", generation);
+            workerRunning = true;
+        }
+        CALCULATION_EXECUTOR.execute(ReplicationCalculationMixin::replicatedIntegration$processPendingCalculations);
+    }
+
+    private static void replicatedIntegration$processPendingCalculations() {
+        while (true) {
+            PendingCalculation calculation;
+            synchronized (CALCULATION_LOCK) {
+                calculation = pendingCalculation;
+                pendingCalculation = null;
+                if (calculation == null) {
+                    workerRunning = false;
+                    return;
+                }
+            }
+            Constants.INSTANCE.getLOGGER().info("Replacing Replication calculateRecipes with replicated_integration addon pipeline");
+            CalculationArtifacts artifacts = NeoReplicationCalculationService.INSTANCE.calculate(calculation.snapshot());
+            calculation.server().execute(() -> {
+                if (calculation.generation() != CALCULATION_GENERATION.get()) {
+                    Constants.INSTANCE.getLOGGER().info("Skipping stale Neo calculation generation {}", calculation.generation());
                     return;
                 }
                 DEFAULT_MATTER_COMPOUND = artifacts.getCompounds();
@@ -67,6 +91,9 @@ public abstract class ReplicationCalculationMixin {
                 Constants.INSTANCE.getLOGGER().info("Replication addon calculation applied {} exported compounds", DEFAULT_MATTER_COMPOUND.size());
                 NeoReplicationCalculationService.INSTANCE.syncToPlayers(cachedSyncTag);
             });
-        });
+        }
+    }
+
+    private record PendingCalculation(long generation, MinecraftServer server, NeoCalculationSnapshot snapshot) {
     }
 }

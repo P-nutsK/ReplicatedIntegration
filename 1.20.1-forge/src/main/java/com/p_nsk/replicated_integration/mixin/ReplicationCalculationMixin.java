@@ -3,6 +3,7 @@ package com.p_nsk.replicated_integration.mixin;
 import com.buuz135.replication.calculation.MatterCompound;
 import com.buuz135.replication.calculation.ReplicationCalculation;
 import com.p_nsk.replicated_integration.bridge.CalculationArtifacts;
+import com.p_nsk.replicated_integration.bridge.ForgeCalculationSnapshot;
 import com.p_nsk.replicated_integration.bridge.ForgeReplicationCalculationService;
 import com.p_nsk.replicated_integration.Constants;
 import net.minecraft.nbt.CompoundTag;
@@ -18,6 +19,7 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.Nullable;
 
 @Mixin(ReplicationCalculation.class)
 public abstract class ReplicationCalculationMixin {
@@ -26,7 +28,11 @@ public abstract class ReplicationCalculationMixin {
         thread.setDaemon(true);
         return thread;
     });
+    private static final Object CALCULATION_LOCK = new Object();
     private static final AtomicLong CALCULATION_GENERATION = new AtomicLong();
+    @Nullable
+    private static PendingCalculation pendingCalculation;
+    private static boolean workerRunning;
 
     @Shadow(remap = false) public static HashMap<String, MatterCompound> DEFAULT_MATTER_COMPOUND;
     @Shadow(remap = false) private static CompoundTag cachedSyncTag;
@@ -34,18 +40,39 @@ public abstract class ReplicationCalculationMixin {
     @Inject(method = "calculateRecipes", at = @At("HEAD"), cancellable = true, remap = false)
     private static void replicatedIntegration$replaceCalculation(CallbackInfo ci) {
         ci.cancel();
-        final long generation = CALCULATION_GENERATION.incrementAndGet();
-        CALCULATION_EXECUTOR.execute(() -> {
-            Constants.INSTANCE.getLOGGER().info("Replacing Replication calculateRecipes with replicated_integration addon pipeline");
-            CalculationArtifacts artifacts = ForgeReplicationCalculationService.INSTANCE.calculate();
-            if (artifacts == null) {
-                Constants.INSTANCE.getLOGGER().warn("Replication addon calculation returned no artifacts");
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            Constants.INSTANCE.getLOGGER().info("Skipping replicated_integration calculation until a server is available");
+            return;
+        }
+        ForgeCalculationSnapshot snapshot = ForgeReplicationCalculationService.INSTANCE.prepareSnapshot(server);
+        synchronized (CALCULATION_LOCK) {
+            long generation = CALCULATION_GENERATION.incrementAndGet();
+            pendingCalculation = new PendingCalculation(generation, server, snapshot);
+            if (workerRunning) {
                 return;
             }
-            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            workerRunning = true;
+        }
+        CALCULATION_EXECUTOR.execute(ReplicationCalculationMixin::replicatedIntegration$processPendingCalculations);
+    }
+
+    private static void replicatedIntegration$processPendingCalculations() {
+        while (true) {
+            PendingCalculation calculation;
+            synchronized (CALCULATION_LOCK) {
+                calculation = pendingCalculation;
+                pendingCalculation = null;
+                if (calculation == null) {
+                    workerRunning = false;
+                    return;
+                }
+            }
+            Constants.INSTANCE.getLOGGER().info("Replacing Replication calculateRecipes with replicated_integration addon pipeline");
+            CalculationArtifacts artifacts = ForgeReplicationCalculationService.INSTANCE.calculate(calculation.snapshot());
             Runnable applyArtifacts = () -> {
-                if (generation != CALCULATION_GENERATION.get()) {
-                    Constants.INSTANCE.getLOGGER().info("Skipping stale Forge calculation generation {}", generation);
+                if (calculation.generation() != CALCULATION_GENERATION.get()) {
+                    Constants.INSTANCE.getLOGGER().info("Skipping stale Forge calculation generation {}", calculation.generation());
                     return;
                 }
                 DEFAULT_MATTER_COMPOUND = artifacts.getCompounds();
@@ -54,11 +81,10 @@ public abstract class ReplicationCalculationMixin {
                 Constants.INSTANCE.getLOGGER().info("Replication addon calculation applied {} exported compounds", DEFAULT_MATTER_COMPOUND.size());
                 ForgeReplicationCalculationService.INSTANCE.syncToPlayers(artifacts.getSyncTag());
             };
-            if (server != null) {
-                server.execute(applyArtifacts);
-            } else {
-                applyArtifacts.run();
-            }
-        });
+            calculation.server().execute(applyArtifacts);
+        }
+    }
+
+    private record PendingCalculation(long generation, MinecraftServer server, ForgeCalculationSnapshot snapshot) {
     }
 }

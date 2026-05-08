@@ -65,10 +65,11 @@ subprojects {
             name = "ParchmentMC"
             url = uri("https://maven.parchmentmc.org")
         }
-
+        // appeng
         maven {
             name = "ModMaven"
             url = uri("https://modmaven.dev/")
+
         }
 
         maven {

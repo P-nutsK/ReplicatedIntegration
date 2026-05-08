@@ -11,6 +11,7 @@ val emiVersion1_20_1: String by project
 val jadeFileId1_20_1: String by project
 val replicationVersion1_20_1: String by project
 val titaniumVersion1_20_1: String by project
+val ae2Version1_20_1: String by project
 
 // Mod Dependencies
 dependencies {
@@ -18,10 +19,15 @@ dependencies {
 
     modImplementation("curse.maven:replication-638351:$replicationVersion1_20_1")
     modImplementation("curse.maven:titanium-287342:$titaniumVersion1_20_1")
+    modImplementation("appeng:appliedenergistics2-forge:$ae2Version1_20_1")
+
+    // developer dependency
     modRuntimeOnly("curse.maven:tmrv-1194921:7983491")
     modRuntimeOnly("maven.modrinth:emi:$emiVersion1_20_1")
-    modRuntimeOnly("curse.maven:jade-324717:$jadeFileId1_20_1")
 
+    modRuntimeOnly("curse.maven:jade-324717:$jadeFileId1_20_1")
+    // ae2 dependency
+    modRuntimeOnly("curse.maven:guideme-1173950:7127447")
 
     modCompileOnly("mekanism:Mekanism:$mekanismVersion1_20_1:api")
     modRuntimeOnly("mekanism:Mekanism:$mekanismVersion1_20_1")
