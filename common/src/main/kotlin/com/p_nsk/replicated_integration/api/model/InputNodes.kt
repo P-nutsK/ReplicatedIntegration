@@ -1,7 +1,5 @@
 package com.p_nsk.replicated_integration.api.model
 
-import kotlin.collections.joinToString
-
 /**
  * InputNodes: 多数の候補を持つ入力ノードの集合。例えば、レシピの材料が複数のアイテムで代替可能な場合などに使用される。
  */
@@ -29,9 +27,9 @@ class InputNodes(
 
     fun single(): NodeAmount {
         return when (size) {
-            0 -> throw NoSuchElementException("InputMatter is empty.")
+            0 -> throw NoSuchElementException("InputNodes is empty.")
             1 -> choices.single()
-            else -> throw IllegalArgumentException("InputMatter has more than one element.")
+            else -> throw IllegalArgumentException("InputNodes has more than one element.")
         }
     }
 
@@ -40,8 +38,8 @@ class InputNodes(
     }
 
     companion object {
-        private fun normalize(alternatives: List<NodeAmount>): List<NodeAmount> =
-            alternatives.filter { it.amount > 0 }.groupBy { it.node }.map { (node, amounts) ->
+        private fun normalize(choices: List<NodeAmount>): List<NodeAmount> =
+            choices.filter { it.amount > 0 }.groupBy { it.node }.map { (node, amounts) ->
                 NodeAmount(node, amounts.minOf { it.amount })
             }.sortedBy { it.node }
         fun empty(): InputNodes = InputNodes(emptyList())

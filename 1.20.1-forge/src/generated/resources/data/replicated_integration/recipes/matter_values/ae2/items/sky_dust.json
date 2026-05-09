@@ -1,16 +1,12 @@
 {
   "type": "replication:matter_value",
   "input": {
-    "tag": "forge:gems/fluorite"
+    "item": "ae2:sky_dust"
   },
   "matter": [
     {
       "type": "replication:earth",
-      "value": 3.0
-    },
-    {
-      "type": "replication:precious",
-      "value": 4.0
+      "value": 1.0
     }
   ]
 }
