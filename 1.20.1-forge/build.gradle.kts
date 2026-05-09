@@ -11,6 +11,10 @@ dependencies {
         classifier(name)
     }
 
+    fun universal(dependency: Provider<MinimalExternalModuleDependency>) = variantOf(dependency) {
+        classifier("universal")
+    }
+
     modImplementation(libs.kff.mc1201)
     modImplementation(libs.replication.mc1201)
     modImplementation(libs.titanium.mc1201)
@@ -28,6 +32,11 @@ dependencies {
 
     // ae2 dependency
     modRuntimeOnly(libs.guideme.mc1201)
+
+    // draconic evolution dependency
+    modRuntimeOnly(universal(libs.brandonscore.mc1201))
+    modRuntimeOnly(universal(libs.codechickenlib.mc1201))
+    modImplementation(libs.draconic.evolution.mc1201)
 
     modCompileOnly(mekclassifier("api"))
     modRuntimeOnly(libs.mekanism.mc1201)

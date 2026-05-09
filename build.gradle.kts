@@ -78,6 +78,15 @@ subprojects {
         }
 
         maven {
+            name = "covers1624"
+            url = uri("https://maven.covers1624.net/")
+            content {
+                includeGroup("com.brandon3055.brandonscore")
+                includeGroup("io.codechicken")
+            }
+        }
+
+        maven {
             name = "Curse Maven"
             url = uri("https://cursemaven.com")
             content {
