@@ -37,6 +37,10 @@ tmrv-mc1211 = "7983494"
 guideme-mc1201 = "7127447"
 guideme-mc1211 = "7127444"
 
+brandonscore-mc1201 = "1.20.1-3.2.1.302"
+codechickenlib-mc1201 = "1.20.1-4.4.0.516"
+draconic-evolution-mc1201 = "6793843"
+
 [libraries]
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j-api" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
@@ -71,6 +75,10 @@ ae2-mc1211 = { module = "org.appliedenergistics:appliedenergistics2", version.re
 aae-mc1201 = { module = "curse.maven:advancedae-1084104", version.ref = "aae-mc1201"}
 ae2addonlib-mc1201 = { module = "curse.maven:ae2addonlib-1366135" ,version.ref = "ae2addonlib-mc1201" }
 geckolib-mc1201 = { module = "curse.maven:geckolib-388172", version.ref = "geckolib-mc1201" }
+
+brandonscore-mc1201 = { module = "com.brandon3055.brandonscore:BrandonsCore", version.ref = "brandonscore-mc1201" }
+codechickenlib-mc1201 = { module = "io.codechicken:CodeChickenLib", version.ref = "codechickenlib-mc1201" }
+draconic-evolution-mc1201 = { module = "curse.maven:draconic-evolution-223565", version.ref = "draconic-evolution-mc1201" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
