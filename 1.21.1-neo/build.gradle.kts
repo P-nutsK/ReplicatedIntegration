@@ -24,7 +24,8 @@ dependencies {
     runtimeOnly(mekclassifier("generators"))
 
     runtimeOnly(mekclassifier("tools"))
-    runtimeOnly(libs.tmrv.mc1211)
+    // ↓どこかに勝手にJEIを入れてる野蛮なmodがある.
+//    runtimeOnly(libs.tmrv.mc1211)
     runtimeOnly(libs.emi.mc1211)
     runtimeOnly(libs.jade.mc1211)
     runtimeOnly(libs.guideme.mc1211)

@@ -7,14 +7,13 @@ import com.p_nsk.replicated_integration.api.command.MatterCommandSupport
 import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
-
 import com.p_nsk.replicated_integration.api.node.NodeKey
 import com.p_nsk.replicated_integration.api.node.formatNode
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
 import com.p_nsk.replicated_integration.api.selector.formatSelector
-import com.p_nsk.replicated_integration.core.ForgeReplicationCalculationService
-import com.p_nsk.replicated_integration.data.ForgeMatterConfigOverrides
-import com.p_nsk.replicated_integration.data.ForgeMatterRuntimeOverrides
+import com.p_nsk.replicated_integration.core.NeoReplicationCalculationService
+import com.p_nsk.replicated_integration.data.NeoMatterConfigOverrides
+import com.p_nsk.replicated_integration.data.NeoMatterRuntimeOverrides
 import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
 import net.minecraft.ChatFormatting
 import net.minecraft.commands.CommandSourceStack
@@ -27,7 +26,7 @@ object MatterCommandActions {
     ): Int {
         val explicitValue = MatterNodeDebugCache.explicit(node)
         val solvedValue = MatterNodeDebugCache.get(node)
-        val label = ForgeReplicationCalculationService.nodeTypes().formatNode(node)
+        val label = NeoReplicationCalculationService.nodeTypes().formatNode(node)
         val requestedMatterType = MatterCommandParsing.requestedMatterType(context)
 
         when (explicitValue) {
@@ -36,9 +35,7 @@ object MatterCommandActions {
                     Component.literal("Matter for ")
                         .append(Component.literal(label).withStyle(ChatFormatting.GREEN))
                         .append(Component.literal(": denied").withStyle(ChatFormatting.RED))
-                        .append(
-                            Component.literal(" via ${explicitValue.source.displayName}").withStyle(ChatFormatting.GRAY)
-                        )
+                        .append(Component.literal(" via ${explicitValue.source.displayName}").withStyle(ChatFormatting.GRAY))
                 }, false)
             }
 
@@ -74,7 +71,7 @@ object MatterCommandActions {
         selector: MatterSelectorKey,
     ): Int {
         val explicitValue = MatterNodeDebugCache.selector(selector)
-        val label = ForgeReplicationCalculationService.nodeTypes().formatSelector(selector)
+        val label = NeoReplicationCalculationService.nodeTypes().formatSelector(selector)
         val requestedMatterType = MatterCommandParsing.requestedMatterType(context)
 
         when (explicitValue) {
@@ -83,9 +80,7 @@ object MatterCommandActions {
                     Component.literal("Selector ")
                         .append(Component.literal(label).withStyle(ChatFormatting.GREEN))
                         .append(Component.literal(": denied").withStyle(ChatFormatting.RED))
-                        .append(
-                            Component.literal(" via ${explicitValue.source.displayName}").withStyle(ChatFormatting.GRAY)
-                        )
+                        .append(Component.literal(" via ${explicitValue.source.displayName}").withStyle(ChatFormatting.GRAY))
                 }, false)
                 return 1
             }
@@ -94,9 +89,7 @@ object MatterCommandActions {
                 context.source.sendSuccess({
                     Component.literal("Selector ")
                         .append(Component.literal(label).withStyle(ChatFormatting.GREEN))
-                        .append(
-                            Component.literal(" [${explicitValue.source.displayName}]").withStyle(ChatFormatting.GRAY)
-                        )
+                        .append(Component.literal(" [${explicitValue.source.displayName}]").withStyle(ChatFormatting.GRAY))
                 }, false)
 
                 val entries = filterMatterEntries(explicitValue.compound, requestedMatterType)
@@ -141,14 +134,12 @@ object MatterCommandActions {
                 LiteMatterCompound(current)
             }
 
-        ForgeMatterRuntimeOverrides.set(server, selector, compound)
-        ReplicationCalculation.calculateRecipes()
+        NeoMatterRuntimeOverrides.set(server, selector, compound)
+        ReplicationCalculation.calculateRecipes(server.registryAccess())
 
         context.source.sendSuccess({
             Component.literal(
-                "Updated ${
-                    ForgeReplicationCalculationService.nodeTypes().formatSelector(selector)
-                } and queued recalculation."
+                "Updated ${NeoReplicationCalculationService.nodeTypes().formatSelector(selector)} and queued recalculation."
             )
         }, true)
 
@@ -159,23 +150,20 @@ object MatterCommandActions {
         server: net.minecraft.server.MinecraftServer,
         selector: MatterSelectorKey,
     ): LiteMatterCompound =
-        (ForgeMatterRuntimeOverrides.snapshot(server)[selector] as? ExplicitMatterValue.Set)?.compound
-            ?: (ForgeMatterConfigOverrides.snapshot()[selector] as? ExplicitMatterValue.Set)?.compound
+        (NeoMatterRuntimeOverrides.snapshot(server)[selector] as? ExplicitMatterValue.Set)?.compound
+            ?: (NeoMatterConfigOverrides.snapshot()[selector] as? ExplicitMatterValue.Set)?.compound
             ?: LiteMatterCompound.EMPTY
 
     fun denySelector(
         context: CommandContext<CommandSourceStack>,
         selector: MatterSelectorKey,
     ): Int {
-        ForgeMatterRuntimeOverrides.deny(context.source.server, selector)
-        ReplicationCalculation.calculateRecipes()
+        NeoMatterRuntimeOverrides.deny(context.source.server, selector)
+        ReplicationCalculation.calculateRecipes(context.source.server.registryAccess())
 
         context.source.sendSuccess({
             Component.literal(
-                "Denied ${
-                    ForgeReplicationCalculationService.nodeTypes().formatSelector(selector)
-
-                } and queued recalculation."
+                "Denied ${NeoReplicationCalculationService.nodeTypes().formatSelector(selector)} and queued recalculation."
             )
         }, true)
 
@@ -186,14 +174,12 @@ object MatterCommandActions {
         context: CommandContext<CommandSourceStack>,
         selector: MatterSelectorKey,
     ): Int {
-        ForgeMatterRuntimeOverrides.reset(context.source.server, selector)
-        ReplicationCalculation.calculateRecipes()
+        NeoMatterRuntimeOverrides.reset(context.source.server, selector)
+        ReplicationCalculation.calculateRecipes(context.source.server.registryAccess())
 
         context.source.sendSuccess({
             Component.literal(
-                "Reset runtime override for ${
-                        ForgeReplicationCalculationService.nodeTypes().formatSelector(selector)
-                } and queued recalculation."
+                "Reset runtime override for ${NeoReplicationCalculationService.nodeTypes().formatSelector(selector)} and queued recalculation."
             )
         }, true)
 
@@ -201,14 +187,14 @@ object MatterCommandActions {
     }
 
     fun commitRuntimeOverrides(context: CommandContext<CommandSourceStack>): Int {
-        val committed = ForgeMatterConfigOverrides.commit(context.source.server)
+        val committed = NeoMatterConfigOverrides.commit(context.source.server)
 
         if (committed == 0) {
             context.source.sendFailure(Component.literal("No runtime overrides are present to commit."))
             return 0
         }
 
-        ReplicationCalculation.calculateRecipes()
+        ReplicationCalculation.calculateRecipes(context.source.server.registryAccess())
 
         context.source.sendSuccess({
             Component.literal("Committed $committed runtime override(s) to config and queued recalculation.")
@@ -233,13 +219,11 @@ object MatterCommandActions {
     private fun filterMatterEntries(
         compound: LiteMatterCompound,
         requestedMatterType: String?,
-    ): List<Map.Entry<LiteResourceLocation, Double>> =
-        compound.values.entries
-            .sortedBy { it.key.toString() }
-            .filter { entry ->
-                requestedMatterType == null ||
-                        MatterCommandSupport.singleMatterType(requestedMatterType) == entry.key
-            }
+    ) = compound.values.entries
+        .sortedBy { it.key.toString() }
+        .filter { entry ->
+            requestedMatterType == null || MatterCommandSupport.singleMatterType(requestedMatterType) == entry.key
+        }
 
     private fun emitMatterEntries(
         source: CommandSourceStack,

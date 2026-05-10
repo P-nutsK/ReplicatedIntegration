@@ -5,7 +5,9 @@ import com.buuz135.replication.calculation.MatterCompound
 import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.calculation.ReplicationCalculation
 import com.buuz135.replication.recipe.MatterValueRecipe
+import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
 import com.p_nsk.replicated_integration.adapter.mekanism.ReplicationMekanismAddon
+import com.p_nsk.replicated_integration.adapter.mekanism.MekanismNodeResolver
 import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
 import com.p_nsk.replicated_integration.adapter.vanilla.ReplicationVanillaAddon
 import com.p_nsk.replicated_integration.Constants
@@ -34,6 +36,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks
 import java.util.HashMap
 import java.util.LinkedHashMap
 
+@OptIn(ReplicationAddonLoadSafetyContract::class)
 object NeoReplicationCalculationService {
     private const val MAX_SYNC_ENTRIES_PER_PACKET = 96
 
@@ -47,7 +50,7 @@ object NeoReplicationCalculationService {
     private var latestSyncId: Long = 0L
 
     private val addons =
-        ReplicationAddonRegistry(
+        ReplicationAddonRegistry<NeoReplicationAddonContext, NeoMatterCommand>(
             listOf(
                 ReplicationVanillaAddon,
                 ReplicationMekanismAddon,
@@ -150,7 +153,17 @@ object NeoReplicationCalculationService {
         }
     }
 
-    fun nodeTypes() = addons.nodeTypes()
+    private fun matterNodes(): NeoMatterNodeRegistry =
+        addons.matterNodes(NeoReplicationAddonEnvironment)
+
+    fun matterNodeRegistry(): NeoMatterNodeRegistry =
+        matterNodes()
+
+    fun commandTargets(): List<NeoMatterCommand> =
+        matterNodes().commands()
+
+    fun nodeTypes(): NeoMatterNodeRegistry =
+        matterNodes()
 
     @Synchronized
     private fun rememberLatestSnapshot(tag: CompoundTag): Boolean {
@@ -170,6 +183,7 @@ object NeoReplicationCalculationService {
         return when (type) {
             MatterNodes.ITEM -> BuiltinNodeResolver.itemNodesInTag(resourceId)
             MatterNodes.FLUID -> BuiltinNodeResolver.fluidNodesInTag(resourceId)
+            MatterNodes.CHEMICAL -> MekanismNodeResolver.chemicalNodesInTag(resourceId)
             else -> emptyList()
         }
     }

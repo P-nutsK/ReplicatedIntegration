@@ -3,7 +3,6 @@ package com.p_nsk.replicated_integration.adapter.vanilla
 import com.buuz135.replication.ReplicationRegistry
 import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.recipe.MatterValueRecipe
-import com.p_nsk.replicated_integration.api.addon.ReplicationAddon
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonEnvironment
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
@@ -12,14 +11,18 @@ import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.model.NodeAmount
-import com.p_nsk.replicated_integration.api.node.*
 import com.p_nsk.replicated_integration.api.node.MatterNodes.FLUID
 import com.p_nsk.replicated_integration.api.node.MatterNodes.ITEM
+import com.p_nsk.replicated_integration.api.node.MatterNodes
+import com.p_nsk.replicated_integration.api.node.MutableMatterDefaults
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKind
 import com.p_nsk.replicated_integration.api.selector.MutableMatterSelectors
+import com.p_nsk.replicated_integration.core.NeoMatterNodeRegistry
 import com.p_nsk.replicated_integration.core.NeoRecipeConversionSupport
+import com.p_nsk.replicated_integration.core.NeoReplicationAddon
 import com.p_nsk.replicated_integration.core.NeoReplicationAddonContext
+import com.p_nsk.replicated_integration.core.node
 import com.p_nsk.replicated_integration.data.MatterNodeValueReloadListener
 import com.p_nsk.replicated_integration.recipe.replicatedIntegrationDenied
 import net.minecraft.core.registries.BuiltInRegistries
@@ -29,7 +32,7 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.crafting.*
 
 @OptIn(ReplicationAddonLoadSafetyContract::class)
-object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
+object ReplicationVanillaAddon : NeoReplicationAddon {
     override val id: String = "vanilla"
 
     override fun isEnabled(environment: ReplicationAddonEnvironment): Boolean = true
@@ -42,9 +45,34 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
         importDefaults(context.defaultMatterRecipes, selectors)
     }
 
-    override fun registerNodeTypes(registry: MatterNodeTypeRegistry) {
-        registry.register(MatterNodeTypeDef(id = ITEM, displayName = "Item", command = MatterNodeCommandDef("item")))
-        registry.register(MatterNodeTypeDef(id = FLUID, displayName = "Fluid", command = MatterNodeCommandDef("fluid")))
+    override fun registerMatterNodes(registry: NeoMatterNodeRegistry) = with(registry) {
+        node(MatterNodes.ITEM, "Item") {
+            value(
+                literal = "item",
+                suggestions = VanillaMatterCommandInputs.itemSuggestions(),
+                validate = VanillaMatterCommandInputs.itemValidator(),
+            )
+
+            tag(
+                literal = "item_tag",
+                suggestions = VanillaMatterCommandInputs.itemTagSuggestions(),
+                validate = VanillaMatterCommandInputs.itemTagValidator(),
+            )
+        }
+
+        node(MatterNodes.FLUID, "Fluid") {
+            value(
+                literal = "fluid",
+                suggestions = VanillaMatterCommandInputs.fluidSuggestions(),
+                validate = VanillaMatterCommandInputs.fluidValidator(),
+            )
+
+            tag(
+                literal = "fluid_tag",
+                suggestions = VanillaMatterCommandInputs.fluidTagSuggestions(),
+                validate = VanillaMatterCommandInputs.fluidTagValidator(),
+            )
+        }
     }
 
     override fun collectConversions(context: NeoReplicationAddonContext, collector: IConversionSink) {
