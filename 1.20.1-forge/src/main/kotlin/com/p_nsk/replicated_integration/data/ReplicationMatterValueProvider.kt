@@ -30,6 +30,7 @@ class ReplicationMatterValueProvider(
         val out = MatterValueWriter(writes)
 
         backports(out)
+        tweaks(out)
         mekanismValues(out)
         ae2Values(out)
         draconicValues(out)
@@ -85,6 +86,9 @@ class ReplicationMatterValueProvider(
         out.forgeTag("nuts", matter(earth = 4.0, organic = 4.0))
         out.forgeTag("food/berry", matter(earth = 4.0, organic = 4.0))
         out.forgeTag("crops", matter(earth = 2.0, organic = 2.0))
+    }
+    private fun tweaks(out: MatterValueWriter) {
+        out.forgeTag("glass/silica",matter(earth = 2.0))
     }
 
     private fun mekanismValues(out: MatterValueWriter) {

@@ -33,6 +33,7 @@ class NeoReplicationMatterValueProvider(
         ae2Values(out)
         draconicValues(out)
         fluidValues(out)
+        tweakValues(out)
 
         return CompletableFuture.allOf(
             *writes.entries.map { (path, json) ->
@@ -46,6 +47,10 @@ class NeoReplicationMatterValueProvider(
 
     private fun mekanismValues(out: MatterValueWriter) {
         out.commonTag("gems/fluorite", matter(precious = 4.0, earth = 3.0))
+    }
+
+    private fun tweakValues(out: MatterValueWriter) {
+        out.commonTag("glass/silica", matter(earth = 2.0))
     }
 
     private fun ae2Values(out: MatterValueWriter) {

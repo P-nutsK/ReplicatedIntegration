@@ -24,6 +24,7 @@ public abstract class CodecRecipeSerializerMixin<T extends Recipe<?>> {
     @Mutable
     private MapCodec<T> codec;
 
+    @SuppressWarnings("unchecked")
     @Inject(method = "<init>", at = @At("TAIL"))
     private void replicatedIntegration$replaceMatterValueCodec(CallbackInfo ci) {
         if (recipeClass == MatterValueRecipe.class) {

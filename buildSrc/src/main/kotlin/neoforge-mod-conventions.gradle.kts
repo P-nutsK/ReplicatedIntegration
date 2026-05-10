@@ -16,6 +16,7 @@ val modCredits: String by project
 val minecraftVersion: String by project
 val minecraftVersionRange: String by project
 val neoVersion: String by project
+val neoVersionRange: String by project
 val javaVersion: String by project
 
 val sharedCommonProject = ":common"
@@ -108,6 +109,7 @@ val generateModMetadata = tasks.register<ProcessResources>("generateModMetadata"
         put("minecraft_version", minecraftVersion)
         put("minecraft_version_range", minecraftVersionRange)
         put("neo_version", neoVersion)
+        put("neo_version_range", neoVersionRange)
         if (loaderVersionRange != null) put("loader_version_range", loaderVersionRange)
         put("mod_id", modId)
         put("mod_name", modName)

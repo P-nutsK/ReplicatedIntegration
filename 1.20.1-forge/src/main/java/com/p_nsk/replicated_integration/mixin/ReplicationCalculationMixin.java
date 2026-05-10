@@ -22,7 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 
-@Mixin(ReplicationCalculation.class)
+@Mixin(value = ReplicationCalculation.class, remap = false)
 public abstract class ReplicationCalculationMixin {
     @Unique
     private static final ExecutorService CALCULATION_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
