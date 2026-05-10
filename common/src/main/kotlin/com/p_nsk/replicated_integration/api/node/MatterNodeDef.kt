@@ -1,6 +1,7 @@
 package com.p_nsk.replicated_integration.api.node
 
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
+import com.p_nsk.replicated_integration.api.selector.MatterSelectorKind
 
 data class MatterNodeDef<C : MatterCommandDef>(
     val id: LiteResourceLocation,
@@ -20,4 +21,5 @@ data class MatterNodeCommands<C : MatterCommandDef>(
 interface MatterCommandDef {
     val literal: String
     val nodeType: LiteResourceLocation
+    val selectorKind: MatterSelectorKind
 }

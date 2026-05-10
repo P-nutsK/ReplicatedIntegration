@@ -2,6 +2,7 @@ package com.p_nsk.replicated_integration
 
 import com.p_nsk.replicated_integration.command.MatterCommand
 import com.p_nsk.replicated_integration.config.NeoCompatibilityConfig
+import com.p_nsk.replicated_integration.core.NeoBuiltinReplicationAddons
 import com.p_nsk.replicated_integration.data.ReplicationReloadHooks
 import com.p_nsk.replicated_integration.data.ReplicationServerLifecycleHooks
 import com.p_nsk.replicated_integration.network.NeoReplicationCalculationSyncChannel
@@ -16,6 +17,7 @@ object ModMain {
     init {
         registerConfigs()
         registerNetwork()
+        NeoForge.EVENT_BUS.register(NeoBuiltinReplicationAddons)
         NeoForge.EVENT_BUS.register(MatterCommand)
         NeoForge.EVENT_BUS.register(ReplicationReloadHooks)
         NeoForge.EVENT_BUS.register(ReplicationServerLifecycleHooks)

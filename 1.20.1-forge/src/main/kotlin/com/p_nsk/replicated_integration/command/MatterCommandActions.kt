@@ -3,6 +3,7 @@ package com.p_nsk.replicated_integration.command
 import com.buuz135.replication.calculation.ReplicationCalculation
 import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.context.CommandContext
+import com.p_nsk.replicated_integration.api.command.MatterCommandMutation
 import com.p_nsk.replicated_integration.api.command.MatterCommandSupport
 import com.p_nsk.replicated_integration.api.model.ExplicitMatterValue
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
@@ -131,14 +132,11 @@ object MatterCommandActions {
             } else {
                 val type = MatterCommandParsing.requestedMatterType(context) ?: return 0
                 val amount = DoubleArgumentType.getDouble(context, "amount")
-                val current = currentSelectorCompound(server, selector).values.toMutableMap()
-                val matterType = MatterCommandSupport.singleMatterType(type)!!
-                if (amount > 0.0) {
-                    current[matterType] = amount
-                } else {
-                    current.remove(matterType)
-                }
-                LiteMatterCompound(current)
+                MatterCommandMutation.setSingleMatter(
+                    current = currentSelectorCompound(server, selector),
+                    matterType = MatterCommandSupport.singleMatterType(type)!!,
+                    amount = amount,
+                )
             }
 
         ForgeMatterRuntimeOverrides.set(server, selector, compound)

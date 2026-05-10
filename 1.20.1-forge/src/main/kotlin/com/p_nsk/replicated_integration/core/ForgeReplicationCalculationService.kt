@@ -5,12 +5,7 @@ import com.buuz135.replication.calculation.MatterCompound
 import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.recipe.MatterValueRecipe
 import com.p_nsk.replicated_integration.Constants
-import com.p_nsk.replicated_integration.adapter.advanced_ae.ReplicationAdvancedAEAddon
-import com.p_nsk.replicated_integration.adapter.ae2.ReplicationAE2Addon
-import com.p_nsk.replicated_integration.adapter.draconic_evolution.ReplicationDraconicAddon
-import com.p_nsk.replicated_integration.adapter.mekanism.ReplicationMekanismAddon
 import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
-import com.p_nsk.replicated_integration.adapter.vanilla.ReplicationVanillaAddon
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonRegistry
 import com.p_nsk.replicated_integration.api.graph.ConversionGraphBuilder
@@ -45,16 +40,9 @@ object ForgeReplicationCalculationService {
 
     @Volatile
     private var latestSyncHash: Int = 0
-    private val addons =
-        ReplicationAddonRegistry(
-            listOf(
-                ReplicationVanillaAddon,
-                ReplicationMekanismAddon,
-                ReplicationAE2Addon,
-                ReplicationAdvancedAEAddon,
-                ReplicationDraconicAddon
-            )
-        )
+    private val addons: ReplicationAddonRegistry<ForgeReplicationAddonContext, ForgeMatterCommand> by lazy {
+        ReplicationAddonRegistry(ForgeReplicationAddonCollector.addons())
+    }
 
     fun prepareSnapshot(server: MinecraftServer): ForgeCalculationSnapshot {
         ForgeRecipeConversionSupport.invalidateCache()

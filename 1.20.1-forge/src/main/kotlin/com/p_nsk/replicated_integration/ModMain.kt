@@ -5,6 +5,7 @@ package com.p_nsk.replicated_integration
 import com.p_nsk.replicated_integration.command.MatterNodeDebugCommand
 import com.p_nsk.replicated_integration.command.MatterCommand
 import com.p_nsk.replicated_integration.config.ForgeCompatibilityConfig
+import com.p_nsk.replicated_integration.core.ForgeBuiltinReplicationAddons
 import com.p_nsk.replicated_integration.data.ReplicatedIntegrationDataGen
 import com.p_nsk.replicated_integration.data.ReplicationReloadHooks
 import com.p_nsk.replicated_integration.data.ReplicationServerLifecycleHooks
@@ -21,6 +22,7 @@ object ModMain {
         registerKotlinModEventListeners()
         registerConfigs()
         ReplicationCalculationSyncChannel.register()
+        MinecraftForge.EVENT_BUS.register(ForgeBuiltinReplicationAddons)
         MinecraftForge.EVENT_BUS.register(MatterCommand)
         MinecraftForge.EVENT_BUS.register(MatterNodeDebugCommand)
         MinecraftForge.EVENT_BUS.register(ReplicationReloadHooks)

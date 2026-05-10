@@ -2,6 +2,8 @@ package com.p_nsk.replicated_integration.command
 
 import com.mojang.brigadier.context.CommandContext
 import com.p_nsk.replicated_integration.api.command.MatterCommandSupport
+import com.p_nsk.replicated_integration.api.command.nodeKey
+import com.p_nsk.replicated_integration.api.command.selectorKey
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.node.NodeKey
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
@@ -27,20 +29,13 @@ object MatterCommandParsing {
         context: CommandContext<CommandSourceStack>,
         target: ForgeMatterCommand,
     ): NodeKey =
-        NodeKey(
-            type = target.nodeType,
-            id = parseId(context, "id"),
-        )
+        target.nodeKey(parseId(context, "id"))
 
     fun targetSelectorKey(
         context: CommandContext<CommandSourceStack>,
         target: ForgeMatterCommand,
     ): MatterSelectorKey =
-        MatterSelectorKey(
-            kind = target.selectorKind,
-            type = target.nodeType,
-            id = parseId(context, "id"),
-        )
+        target.selectorKey(parseId(context, "id"))
 
     fun debugTagSelector(context: CommandContext<CommandSourceStack>): MatterSelectorKey =
         MatterSelectorKey(

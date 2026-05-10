@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation
 data class NeoMatterCommand(
     override val literal: String,
     override val nodeType: LiteResourceLocation,
-    val selectorKind: MatterSelectorKind,
+    override val selectorKind: MatterSelectorKind,
     val suggestions: SuggestionProvider<CommandSourceStack>,
     val validate: (ResourceLocation) -> TargetValidation,
 ) : MatterCommandDef

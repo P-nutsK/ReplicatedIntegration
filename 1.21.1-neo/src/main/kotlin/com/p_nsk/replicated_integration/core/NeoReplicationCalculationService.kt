@@ -6,10 +6,8 @@ import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.calculation.ReplicationCalculation
 import com.buuz135.replication.recipe.MatterValueRecipe
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
-import com.p_nsk.replicated_integration.adapter.mekanism.ReplicationMekanismAddon
 import com.p_nsk.replicated_integration.adapter.mekanism.MekanismNodeResolver
 import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
-import com.p_nsk.replicated_integration.adapter.vanilla.ReplicationVanillaAddon
 import com.p_nsk.replicated_integration.Constants
 import com.p_nsk.replicated_integration.api.graph.ConversionGraphBuilder
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
@@ -49,13 +47,9 @@ object NeoReplicationCalculationService {
     @Volatile
     private var latestSyncId: Long = 0L
 
-    private val addons =
-        ReplicationAddonRegistry<NeoReplicationAddonContext, NeoMatterCommand>(
-            listOf(
-                ReplicationVanillaAddon,
-                ReplicationMekanismAddon,
-            )
-        )
+    private val addons: ReplicationAddonRegistry<NeoReplicationAddonContext, NeoMatterCommand> by lazy {
+        ReplicationAddonRegistry(NeoReplicationAddonCollector.addons())
+    }
 
     fun prepareSnapshot(server: MinecraftServer): NeoCalculationSnapshot {
         val context =

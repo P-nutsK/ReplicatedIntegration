@@ -5,6 +5,7 @@ import com.p_nsk.replicated_integration.api.node.MatterCommandDef
 import com.p_nsk.replicated_integration.api.node.MatterNodeDef
 import com.p_nsk.replicated_integration.api.node.MatterNodeRegistry
 import com.p_nsk.replicated_integration.api.node.NodeKey
+import com.p_nsk.replicated_integration.api.selector.MatterSelectorKind
 import com.p_nsk.replicated_integration.api.node.formatNode
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,5 +44,6 @@ class MatterNodeSupportTest {
     private data class TestCommand(
         override val literal: String,
         override val nodeType: LiteResourceLocation,
+        override val selectorKind: MatterSelectorKind = MatterSelectorKind.NODE,
     ) : MatterCommandDef
 }
