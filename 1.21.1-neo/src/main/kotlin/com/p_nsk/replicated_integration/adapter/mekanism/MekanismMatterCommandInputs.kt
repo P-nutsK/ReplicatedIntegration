@@ -17,7 +17,7 @@ object MekanismMatterCommandInputs {
 
     @Suppress("DEPRECATION")
     fun chemicalValidator(): (ResourceLocation) -> TargetValidation = { id ->
-        if (MekanismAPI.CHEMICAL_REGISTRY.containsKey(id) && id != MekanismAPI.EMPTY_CHEMICAL_NAME) {
+        if (MekanismAPI.CHEMICAL_REGISTRY.containsKey(id) && id != MekanismAPI.EMPTY_CHEMICAL_KEY) {
             TargetValidation.Valid
         } else {
             TargetValidation.Invalid(Component.literal("Unknown chemical: $id"))

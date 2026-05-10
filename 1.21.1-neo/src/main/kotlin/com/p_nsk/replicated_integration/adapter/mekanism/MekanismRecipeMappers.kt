@@ -1,27 +1,14 @@
 package com.p_nsk.replicated_integration.adapter.mekanism
 
+import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
+import com.p_nsk.replicated_integration.api.graph.RecipeConversionMapper
 import com.p_nsk.replicated_integration.api.model.InputNodes
 import com.p_nsk.replicated_integration.api.model.NodeAmount
-import com.p_nsk.replicated_integration.api.graph.RecipeConversionMapper
-import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
 import com.p_nsk.replicated_integration.api.node.NodeKey
 import com.p_nsk.replicated_integration.core.NeoRecipeConversionSupport
 import mekanism.api.chemical.ChemicalStack
-import mekanism.api.recipes.ChemicalChemicalToChemicalRecipe
-import mekanism.api.recipes.ChemicalCrystallizerRecipe
-import mekanism.api.recipes.ChemicalDissolutionRecipe
-import mekanism.api.recipes.ChemicalToChemicalRecipe
-import mekanism.api.recipes.CombinerRecipe
-import mekanism.api.recipes.ElectrolysisRecipe
-import mekanism.api.recipes.FluidChemicalToChemicalRecipe
-import mekanism.api.recipes.FluidToFluidRecipe
-import mekanism.api.recipes.ItemStackChemicalToItemStackRecipe
-import mekanism.api.recipes.ItemStackToChemicalRecipe
-import mekanism.api.recipes.ItemStackToItemStackRecipe
-import mekanism.api.recipes.MekanismRecipeTypes
-import mekanism.api.recipes.PressurizedReactionRecipe
-import mekanism.api.recipes.RotaryRecipe
+import mekanism.api.recipes.*
 import mekanism.api.recipes.ingredients.ChemicalStackIngredient
 import mekanism.api.recipes.ingredients.FluidStackIngredient
 import mekanism.api.recipes.ingredients.InputIngredient
@@ -32,6 +19,7 @@ import net.minecraft.world.item.crafting.Recipe
 import net.minecraft.world.item.crafting.RecipeHolder
 import net.neoforged.neoforge.fluids.FluidStack
 
+@Suppress("UNCHECKED_CAST")
 object MekanismRecipeMappers {
     private const val COMPRESSING_GAS_SCALE = 200L
 

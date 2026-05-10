@@ -28,7 +28,7 @@ object MekanismNodeResolver {
             .map { holders ->
                 holders.mapNotNull { holder ->
                     val chemicalId = MekanismAPI.CHEMICAL_REGISTRY.getKey(holder.value())
-                    if (chemicalId == MekanismAPI.EMPTY_CHEMICAL_NAME) null else MatterNodes.chemical(chemicalId.toLite())
+                    if (chemicalId == MekanismAPI.EMPTY_CHEMICAL_KEY) null else MatterNodes.chemical(chemicalId.toLite())
                 }
             }
             .orElse(emptyList())
