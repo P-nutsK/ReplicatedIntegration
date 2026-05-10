@@ -2,16 +2,11 @@ package com.p_nsk.replicated_integration.api.node
 
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 
-@Suppress("unused")
-object MatterNodeFormatter {
-    @JvmStatic
-    fun formatType(type: LiteResourceLocation, registry: MatterNodeTypeRegistry): String =
-        registry.get(type)?.displayName ?: type.toString()
+fun MatterNodeRegistry<*>.formatType(type: LiteResourceLocation): String =
+    get(type)?.displayName ?: type.toString()
 
-    @JvmStatic
-    fun formatNode(node: NodeKey, registry: MatterNodeTypeRegistry): String {
-        val type = registry.get(node.type)
-        val formattedId = type?.formatter?.invoke(node.id) ?: node.id.toString()
-        return "$formattedId [${type?.displayName ?: node.type}]"
-    }
+fun MatterNodeRegistry<*>.formatNode(node: NodeKey): String {
+    val def = get(node.type)
+    val formattedId = def?.formatter?.invoke(node.id) ?: node.id.toString()
+    return "$formattedId [${def?.displayName ?: node.type}]"
 }

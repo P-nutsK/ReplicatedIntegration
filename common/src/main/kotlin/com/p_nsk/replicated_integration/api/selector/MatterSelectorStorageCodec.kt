@@ -29,7 +29,7 @@ object MatterSelectorStorageCodec {
             val json = element.asJsonObject
             val selector =
                 MatterSelectorKey(
-                    selector =
+                    kind =
                         when (json["selector"]?.asString ?: "node") {
                             "node" -> MatterSelectorKind.NODE
                             "tag" -> MatterSelectorKind.TAG
@@ -64,7 +64,7 @@ object MatterSelectorStorageCodec {
         val entries = JsonArray()
         for ((selector, value) in values.entries.sortedBy { it.key }) {
             val json = JsonObject()
-            json.addProperty("selector", selector.selector.name.lowercase())
+            json.addProperty("selector", selector.kind.name.lowercase())
             json.addProperty("type", selector.type.toString())
             json.addProperty("id", selector.id.toString())
             when (value) {

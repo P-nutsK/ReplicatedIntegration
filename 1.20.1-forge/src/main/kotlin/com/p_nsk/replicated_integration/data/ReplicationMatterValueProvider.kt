@@ -32,6 +32,7 @@ class ReplicationMatterValueProvider(
         backports(out)
         mekanismValues(out)
         ae2Values(out)
+        draconicValues(out)
         fluidValues(out)
 
         return CompletableFuture.allOf(
@@ -94,6 +95,11 @@ class ReplicationMatterValueProvider(
         out.item(AEItems.MATTER_BALL.asItem(), matter(earth = 256.0))
         out.item(AEItems.SKY_DUST.asItem(), matter(earth = 1.0))
         out.forgeTag("gems/certus_quartz", matter(precious = 3.0, earth = 1.0))
+    }
+
+    private fun draconicValues(out: MatterValueWriter) {
+        out.forgeTag("ingots/draconium", matter(ender = 9.0, metallic = 9.0))
+        out.item("draconicevolution:dragon_heart", matter(ender = 256.0, living = 256.0,quantum = 64.0))
     }
 
     private fun fluidValues(out: MatterValueWriter) {

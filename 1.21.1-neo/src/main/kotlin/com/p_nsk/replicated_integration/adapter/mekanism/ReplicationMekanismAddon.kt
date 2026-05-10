@@ -5,6 +5,10 @@ import com.p_nsk.replicated_integration.api.addon.ReplicationAddon
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonEnvironment
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
+import com.p_nsk.replicated_integration.api.node.MatterNodeCommandDef
+import com.p_nsk.replicated_integration.api.node.MatterNodeTypeDef
+import com.p_nsk.replicated_integration.api.node.MatterNodeTypeRegistry
+import com.p_nsk.replicated_integration.api.node.MatterNodes
 import com.p_nsk.replicated_integration.config.NeoCompatibilityConfig
 import com.p_nsk.replicated_integration.core.NeoReplicationAddonContext
 import net.minecraft.world.item.crafting.RecipeHolder
@@ -24,5 +28,15 @@ object ReplicationMekanismAddon : ReplicationAddon<NeoReplicationAddonContext> {
         if (NeoCompatibilityConfig.isNuclearRecipeEnabled()) {
             NeoMekanismSyntheticConversionContributor.collectNuclearConversions(collector)
         }
+    }
+
+    override fun registerNodeTypes(registry: MatterNodeTypeRegistry) {
+        registry.register(
+            MatterNodeTypeDef(
+                id = MatterNodes.CHEMICAL,
+                displayName = "Chemical",
+                command = MatterNodeCommandDef("chemical")
+            )
+        )
     }
 }

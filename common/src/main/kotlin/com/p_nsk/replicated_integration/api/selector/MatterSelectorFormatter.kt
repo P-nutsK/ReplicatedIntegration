@@ -1,13 +1,15 @@
 package com.p_nsk.replicated_integration.api.selector
 
-import com.p_nsk.replicated_integration.api.node.MatterNodeTypeRegistry
+import com.p_nsk.replicated_integration.api.node.MatterNodeRegistry
+import com.p_nsk.replicated_integration.api.node.NodeKey
+import com.p_nsk.replicated_integration.api.node.formatNode
+import com.p_nsk.replicated_integration.api.node.formatType
 
-object MatterSelectorFormatter {
-    fun format(selector: MatterSelectorKey, nodeTypes: MatterNodeTypeRegistry): String {
-        val label = nodeTypes.get(selector.type)?.displayName ?: selector.type.toString()
-        return when (selector.selector) {
-            MatterSelectorKind.NODE -> "${selector.id} [$label]"
-            MatterSelectorKind.TAG -> "#${selector.id} [$label Tag]"
-        }
+fun MatterNodeRegistry<*>.formatSelector(selector: MatterSelectorKey): String =
+    when (selector.kind) {
+        MatterSelectorKind.NODE ->
+            formatNode(NodeKey(selector.type, selector.id))
+
+        MatterSelectorKind.TAG ->
+            "#${selector.id} [${formatType(selector.type)} tag]"
     }
-}

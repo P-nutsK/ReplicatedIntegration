@@ -6,16 +6,22 @@ import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 object MatterNodes {
     @JvmField
     val ITEM = LiteResourceLocation.of("c", "item")
+
     @JvmField
     val FLUID = LiteResourceLocation.of("c", "fluid")
+
     @JvmField
     val CHEMICAL = LiteResourceLocation.of("mekanism", "chemical")
+
     @JvmField
     val GAS = LiteResourceLocation.of("mekanism", "gas")
+
     @JvmField
     val INFUSE_TYPE = LiteResourceLocation.of("mekanism", "infuse_type")
+
     @JvmField
     val PIGMENT = LiteResourceLocation.of("mekanism", "pigment")
+
     @JvmField
     val SLURRY = LiteResourceLocation.of("mekanism", "slurry")
 
@@ -39,16 +45,4 @@ object MatterNodes {
 
     @JvmStatic
     fun slurry(id: LiteResourceLocation) = NodeKey(SLURRY, id)
-
-    @JvmStatic
-    fun builtinTypes(): List<MatterNodeTypeDef> =
-        listOf(
-            MatterNodeTypeDef(ITEM, "Item"),
-            MatterNodeTypeDef(FLUID, "Fluid"),
-            MatterNodeTypeDef(CHEMICAL, "Chemical"),
-            MatterNodeTypeDef(GAS, "Gas"),
-            MatterNodeTypeDef(INFUSE_TYPE, "Infuse Type"),
-            MatterNodeTypeDef(PIGMENT, "Pigment"),
-            MatterNodeTypeDef(SLURRY, "Slurry"),
-        )
 }

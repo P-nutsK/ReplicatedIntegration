@@ -1,14 +1,14 @@
 package com.p_nsk.replicated_integration.adapter.ae2
 
-import com.p_nsk.replicated_integration.api.addon.ReplicationAddon
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonEnvironment
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
+import com.p_nsk.replicated_integration.core.ForgeReplicationAddon
 import com.p_nsk.replicated_integration.core.ForgeReplicationAddonContext
 import net.minecraft.world.item.crafting.Recipe
 
 @OptIn(ReplicationAddonLoadSafetyContract::class)
-object ReplicationAE2Addon : ReplicationAddon<ForgeReplicationAddonContext> {
+object ReplicationAE2Addon : ForgeReplicationAddon {
     override val id: String = "ae2"
 
     override fun isEnabled(environment: ReplicationAddonEnvironment): Boolean =

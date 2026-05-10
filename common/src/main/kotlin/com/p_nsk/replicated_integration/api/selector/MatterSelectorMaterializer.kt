@@ -12,12 +12,12 @@ object MatterSelectorMaterializer {
         val values = linkedMapOf<NodeKey, AppliedValue>()
         for ((selector, explicitValue) in selectors.entries.sortedBy { it.key }) {
             val targets =
-                when (selector.selector) {
+                when (selector.kind) {
                     MatterSelectorKind.NODE -> listOf(NodeKey(selector.type, selector.id))
                     MatterSelectorKind.TAG -> expandTag(selector.type, selector.id).toList()
                 }
             val specificity =
-                when (selector.selector) {
+                when (selector.kind) {
                     MatterSelectorKind.NODE -> 1
                     MatterSelectorKind.TAG -> 0
                 }

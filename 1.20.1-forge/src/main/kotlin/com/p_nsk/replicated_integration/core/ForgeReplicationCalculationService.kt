@@ -4,26 +4,27 @@ import com.buuz135.replication.ReplicationRegistry
 import com.buuz135.replication.calculation.MatterCompound
 import com.buuz135.replication.calculation.MatterValue
 import com.buuz135.replication.recipe.MatterValueRecipe
-import com.p_nsk.replicated_integration.adapter.mekanism.ReplicationMekanismAddon
-import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
-import com.p_nsk.replicated_integration.adapter.vanilla.ReplicationVanillaAddon
 import com.p_nsk.replicated_integration.Constants
 import com.p_nsk.replicated_integration.adapter.advanced_ae.ReplicationAdvancedAEAddon
 import com.p_nsk.replicated_integration.adapter.ae2.ReplicationAE2Addon
+import com.p_nsk.replicated_integration.adapter.draconic_evolution.ReplicationDraconicAddon
+import com.p_nsk.replicated_integration.adapter.mekanism.ReplicationMekanismAddon
+import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
+import com.p_nsk.replicated_integration.adapter.vanilla.ReplicationVanillaAddon
 import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyContract
+import com.p_nsk.replicated_integration.api.addon.ReplicationAddonRegistry
 import com.p_nsk.replicated_integration.api.graph.ConversionGraphBuilder
+import com.p_nsk.replicated_integration.api.graph.SimpleConversionSolver
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.node.NodeKey
 import com.p_nsk.replicated_integration.api.node.MatterNodes
 import com.p_nsk.replicated_integration.api.node.MutableMatterDefaults
-import com.p_nsk.replicated_integration.api.selector.MutableMatterSelectors
+import com.p_nsk.replicated_integration.api.node.NodeKey
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorMaterializer
-import com.p_nsk.replicated_integration.api.addon.ReplicationAddonRegistry
-import com.p_nsk.replicated_integration.api.graph.SimpleConversionSolver
-import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
+import com.p_nsk.replicated_integration.api.selector.MutableMatterSelectors
 import com.p_nsk.replicated_integration.data.ForgeMatterConfigOverrides
 import com.p_nsk.replicated_integration.data.ForgeMatterRuntimeOverrides
+import com.p_nsk.replicated_integration.debug.MatterNodeDebugCache
 import com.p_nsk.replicated_integration.network.ReplicationCalculationSyncChannel
 import com.p_nsk.replicated_integration.network.ReplicationCalculationSyncPacket
 import net.minecraft.nbt.CompoundTag
@@ -31,8 +32,6 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraftforge.network.PacketDistributor
 import net.minecraftforge.server.ServerLifecycleHooks
-import java.util.HashMap
-import java.util.LinkedHashMap
 
 @OptIn(ReplicationAddonLoadSafetyContract::class)
 object ForgeReplicationCalculationService {
@@ -52,11 +51,13 @@ object ForgeReplicationCalculationService {
                 ReplicationVanillaAddon,
                 ReplicationMekanismAddon,
                 ReplicationAE2Addon,
-                ReplicationAdvancedAEAddon
+                ReplicationAdvancedAEAddon,
+                ReplicationDraconicAddon
             )
         )
 
     fun prepareSnapshot(server: MinecraftServer): ForgeCalculationSnapshot {
+        ForgeRecipeConversionSupport.invalidateCache()
         val context =
             ForgeReplicationAddonContext(
                 recipeManager = server.recipeManager,
@@ -173,7 +174,16 @@ object ForgeReplicationCalculationService {
         }
     }
 
-    fun nodeTypes() = addons.nodeTypes()
+    private fun matterNodes(): ForgeMatterNodeRegistry =
+        addons.matterNodes(ForgeReplicationAddonEnvironment)
+
+    fun matterNodeRegistry(): ForgeMatterNodeRegistry =
+        matterNodes()
+
+    fun commandTargets(): List<ForgeMatterCommand> =
+        matterNodes().commands()
+    fun nodeTypes(): ForgeMatterNodeRegistry =
+        matterNodes()
 
     @Synchronized
     private fun rememberLatestSnapshot(tag: CompoundTag): Boolean {

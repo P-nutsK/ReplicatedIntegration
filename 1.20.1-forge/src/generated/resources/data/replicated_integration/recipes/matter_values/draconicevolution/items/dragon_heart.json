@@ -1,0 +1,20 @@
+{
+  "type": "replication:matter_value",
+  "input": {
+    "item": "draconicevolution:dragon_heart"
+  },
+  "matter": [
+    {
+      "type": "replication:quantum",
+      "value": 64.0
+    },
+    {
+      "type": "replication:ender",
+      "value": 256.0
+    },
+    {
+      "type": "replication:living",
+      "value": 256.0
+    }
+  ]
+}

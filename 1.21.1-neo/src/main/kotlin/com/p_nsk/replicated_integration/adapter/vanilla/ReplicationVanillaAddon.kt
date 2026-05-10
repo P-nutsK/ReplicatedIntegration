@@ -12,8 +12,9 @@ import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.model.NodeAmount
-import com.p_nsk.replicated_integration.api.node.MatterNodes
-import com.p_nsk.replicated_integration.api.node.MutableMatterDefaults
+import com.p_nsk.replicated_integration.api.node.*
+import com.p_nsk.replicated_integration.api.node.MatterNodes.FLUID
+import com.p_nsk.replicated_integration.api.node.MatterNodes.ITEM
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKey
 import com.p_nsk.replicated_integration.api.selector.MatterSelectorKind
 import com.p_nsk.replicated_integration.api.selector.MutableMatterSelectors
@@ -39,6 +40,11 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
 
     override fun collectSelectors(context: NeoReplicationAddonContext, selectors: MutableMatterSelectors) {
         importDefaults(context.defaultMatterRecipes, selectors)
+    }
+
+    override fun registerNodeTypes(registry: MatterNodeTypeRegistry) {
+        registry.register(MatterNodeTypeDef(id = ITEM, displayName = "Item", command = MatterNodeCommandDef("item")))
+        registry.register(MatterNodeTypeDef(id = FLUID, displayName = "Fluid", command = MatterNodeCommandDef("fluid")))
     }
 
     override fun collectConversions(context: NeoReplicationAddonContext, collector: IConversionSink) {
@@ -75,11 +81,18 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
             for (stack in holder.value.input.items) {
                 val itemNode = BuiltinNodeResolver.itemNode(stack) ?: continue
                 if (holder.value.replicatedIntegrationDenied) {
-                    selectors.deny(MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id), ExplicitMatterSource.DATAPACK)
+                    selectors.deny(
+                        MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id),
+                        ExplicitMatterSource.DATAPACK
+                    )
                     continue
                 }
                 val compound = holder.value.matter.toLiteMatterCompound() ?: continue
-                selectors.put(MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id), compound, ExplicitMatterSource.DATAPACK)
+                selectors.put(
+                    MatterSelectorKey(MatterSelectorKind.NODE, itemNode.type, itemNode.id),
+                    compound,
+                    ExplicitMatterSource.DATAPACK
+                )
             }
         }
     }
@@ -109,7 +122,8 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
     private fun createMappers(context: NeoReplicationAddonContext): List<RecipeConversionMapper<RecipeHolder<*>>> =
         listOf(
             singleOutputMapper<CraftingRecipe>(context) { holder ->
-                val output = holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
+                val output =
+                    holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
                 ConversionInputs(
                     holder.id,
                     holder.value.ingredients
@@ -120,24 +134,49 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
                 )
             },
             singleOutputMapper<SmeltingRecipe>(context) { holder ->
-                val output = holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(holder.id, listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                val output =
+                    holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
+                ConversionInputs(
+                    holder.id,
+                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    output
+                )
             },
             singleOutputMapper<BlastingRecipe>(context) { holder ->
-                val output = holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(holder.id, listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                val output =
+                    holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
+                ConversionInputs(
+                    holder.id,
+                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    output
+                )
             },
             singleOutputMapper<SmokingRecipe>(context) { holder ->
-                val output = holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(holder.id, listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                val output =
+                    holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
+                ConversionInputs(
+                    holder.id,
+                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    output
+                )
             },
             singleOutputMapper<CampfireCookingRecipe>(context) { holder ->
-                val output = holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(holder.id, listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                val output =
+                    holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
+                ConversionInputs(
+                    holder.id,
+                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    output
+                )
             },
             singleOutputMapper<StonecutterRecipe>(context) { holder ->
-                val output = holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
-                ConversionInputs(holder.id, listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()), output)
+                val output =
+                    holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
+                ConversionInputs(
+                    holder.id,
+                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    output
+                )
             },
         )
 
@@ -145,14 +184,22 @@ object ReplicationVanillaAddon : ReplicationAddon<NeoReplicationAddonContext> {
         explicitDefaultTagSelectorOrNull() ?: explicitDefaultItemSelectorOrNull()
 
     private fun Ingredient.explicitDefaultItemSelectorOrNull() =
-        if (isCustom || values.size != 1) null else (values.singleOrNull() as? Ingredient.ItemValue)?.item()?.let { stack ->
-            MatterSelectorKey(MatterSelectorKind.NODE, MatterNodes.ITEM, NeoRecipeConversionSupport.run { BuiltInRegistries.ITEM.getKey(stack.item).toLite() })
-        }
+        if (isCustom || values.size != 1) null else (values.singleOrNull() as? Ingredient.ItemValue)?.item()
+            ?.let { stack ->
+                MatterSelectorKey(
+                    MatterSelectorKind.NODE,
+                    MatterNodes.ITEM,
+                    NeoRecipeConversionSupport.run { BuiltInRegistries.ITEM.getKey(stack.item).toLite() })
+            }
 
     private fun Ingredient.explicitDefaultTagSelectorOrNull() =
-        if (isCustom || values.size != 1) null else (values.singleOrNull() as? Ingredient.TagValue)?.tag()?.location()?.let { tagId ->
-            MatterSelectorKey(MatterSelectorKind.TAG, MatterNodes.ITEM, NeoRecipeConversionSupport.run { tagId.toLite() })
-        }
+        if (isCustom || values.size != 1) null else (values.singleOrNull() as? Ingredient.TagValue)?.tag()?.location()
+            ?.let { tagId ->
+                MatterSelectorKey(
+                    MatterSelectorKind.TAG,
+                    MatterNodes.ITEM,
+                    NeoRecipeConversionSupport.run { tagId.toLite() })
+            }
 
     private inline fun <reified R : Recipe<*>> singleOutputMapper(
         context: NeoReplicationAddonContext,

@@ -3,8 +3,8 @@ package com.p_nsk.replicated_integration.core
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
 import com.p_nsk.replicated_integration.api.model.InputNodes
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
-import com.p_nsk.replicated_integration.api.model.NodeAmount
 import com.p_nsk.replicated_integration.api.model.MatterConversion
+import com.p_nsk.replicated_integration.api.model.NodeAmount
 import com.p_nsk.replicated_integration.api.node.NodeKey
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.resources.ResourceLocation
@@ -136,6 +136,10 @@ object ForgeRecipeConversionSupport {
         .eachCount()
         .map { (input, count) -> input to count.toLong() }
         .sortedBy { (candidate, _) -> candidate.signature }
+
+    fun invalidateCache() {
+        ingredientInputNodesCache.clear()
+    }
 
     fun ResourceLocation.toLite(): LiteResourceLocation = LiteResourceLocation.of(namespace, path)
 }
