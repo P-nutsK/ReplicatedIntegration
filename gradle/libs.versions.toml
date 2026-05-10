@@ -23,13 +23,16 @@ titanium-mc1201 = "5468426"
 titanium-mc1211 = "1.21-4.0.32"
 
 ae2-mc1201 = "15.4.10"
-ae2-mc1211 = "19.2.8"
+ae2-mc1211 = "19.2.16"
 
 aae-mc1201 = "7668689"
+aae-mc1211 = "7849217"
 
 ae2addonlib-mc1201 = "7668681"
+ae2addonlib-mc1211 = "7222312"
 
 geckolib-mc1201 = "6920925"
+geckolib-mc1211 = "7707149"
 
 tmrv-mc1201 = "7983491"
 tmrv-mc1211 = "7983494"
@@ -38,8 +41,12 @@ guideme-mc1201 = "7127447"
 guideme-mc1211 = "7127444"
 
 brandonscore-mc1201 = "1.20.1-3.2.1.302"
+brandonscore-mc1211 = "7130990"
 codechickenlib-mc1201 = "1.20.1-4.4.0.516"
+codechickenlib-mc1211 = "7281427"
 draconic-evolution-mc1201 = "6793843"
+draconic-evolution-mc1211 = "7584459"
+curios-mc1211 = "6528893"
 
 [libraries]
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j-api" }
@@ -73,12 +80,19 @@ ae2-mc1201 = { module = "appeng:appliedenergistics2-forge", version.ref = "ae2-m
 ae2-mc1211 = { module = "org.appliedenergistics:appliedenergistics2", version.ref = "ae2-mc1211" }
 
 aae-mc1201 = { module = "curse.maven:advancedae-1084104", version.ref = "aae-mc1201"}
+aae-mc1211 = { module = "curse.maven:advancedae-1084104", version.ref = "aae-mc1211" }
 ae2addonlib-mc1201 = { module = "curse.maven:ae2addonlib-1366135" ,version.ref = "ae2addonlib-mc1201" }
+ae2addonlib-mc1211 = { module = "curse.maven:ae2addonlib-1366135", version.ref = "ae2addonlib-mc1211" }
 geckolib-mc1201 = { module = "curse.maven:geckolib-388172", version.ref = "geckolib-mc1201" }
+geckolib-mc1211 = { module = "curse.maven:geckolib-388172", version.ref = "geckolib-mc1211" }
 
 brandonscore-mc1201 = { module = "com.brandon3055.brandonscore:BrandonsCore", version.ref = "brandonscore-mc1201" }
+brandonscore-mc1211 = { module = "curse.maven:brandons-core-231382", version.ref = "brandonscore-mc1211" }
 codechickenlib-mc1201 = { module = "io.codechicken:CodeChickenLib", version.ref = "codechickenlib-mc1201" }
+codechickenlib-mc1211 = { module = "curse.maven:codechicken-lib-1-8-242818", version.ref = "codechickenlib-mc1211" }
 draconic-evolution-mc1201 = { module = "curse.maven:draconic-evolution-223565", version.ref = "draconic-evolution-mc1201" }
+draconic-evolution-mc1211 = { module = "curse.maven:draconic-evolution-223565", version.ref = "draconic-evolution-mc1211" }
+curios-mc1211 = { module = "curse.maven:curios-309927", version.ref = "curios-mc1211" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

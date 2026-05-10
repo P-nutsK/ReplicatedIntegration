@@ -1,7 +1,7 @@
 {
   "type": "replication:matter_value",
   "input": {
-    "tag": "c:gems/fluorite"
+    "tag": "c:gems/certus_quartz"
   },
   "matter": [
     {
@@ -10,7 +10,7 @@
     },
     {
       "type": "replication:precious",
-      "amount": 4.0
+      "amount": 3.0
     }
   ]
 }

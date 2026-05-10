@@ -1,0 +1,14 @@
+{
+  "type": "c:fluid",
+  "id": "minecraft:lava",
+  "matter": [
+    {
+      "type": "replication:earth",
+      "value": 0.004
+    },
+    {
+      "type": "replication:nether",
+      "value": 0.001
+    }
+  ]
+}

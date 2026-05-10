@@ -1,6 +1,7 @@
 package com.p_nsk.replicated_integration.core
 
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
+import com.p_nsk.replicated_integration.api.model.InputNodes
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.model.NodeAmount
 import com.p_nsk.replicated_integration.api.model.MatterConversion
@@ -12,9 +13,9 @@ import net.minecraft.world.item.crafting.Ingredient
 
 object NeoRecipeConversionSupport {
     const val MAX_CONVERSIONS_PER_RECIPE = 256L
-    private val ingredientAlternativesCache = linkedMapOf<String, List<NodeAmount>>()
+    private val ingredientInputNodesCache = linkedMapOf<String, InputNodes>()
 
-    fun addConversion(
+    private fun addConversionInternal(
         id: ResourceLocation,
         consumes: List<NodeAmount>,
         produces: NodeAmount,
@@ -36,37 +37,36 @@ object NeoRecipeConversionSupport {
         )
     }
 
-    fun addConversionsForAlternatives(
+    fun addConversion(
         id: ResourceLocation,
-        consumeAlternatives: List<List<NodeAmount>>,
+        consumeInputNodes: List<InputNodes>,
         produces: NodeAmount,
         creditsOf: (List<NodeAmount>) -> List<NodeAmount> = { emptyList() },
         loopGuardKey: LiteResourceLocation? = null,
         collector: IConversionSink,
     ): Boolean {
-        val normalized = consumeAlternatives
-            .map(::normalizeAlternatives)
-            .filter { it.isNotEmpty() }
-        if (normalized.size != consumeAlternatives.size) {
+        if (consumeInputNodes.any { it.isEmpty() }) {
             return false
         }
 
-        val collapsed = collapseEquivalentAlternatives(normalized)
+        val collapsed = collapseEquivalentInputs(consumeInputNodes)
 
         var combinationCount = 1L
-        for ((alternatives, _) in collapsed) {
-            combinationCount *= alternatives.size.toLong()
+        for ((inputNode, _) in collapsed) {
+            combinationCount *= inputNode.size.toLong()
             if (combinationCount > MAX_CONVERSIONS_PER_RECIPE) {
                 return false
             }
         }
 
-        if (collapsed.size == 1 && collapsed.single().first.size == 1) {
-            val (alternatives, multiplier) = collapsed.single()
-            val only = alternatives.single()
-            val consumes = listOf(NodeAmount(only.node, only.amount * multiplier))
-            addConversion(id, consumes, produces, creditsOf(consumes), loopGuardKey, collector)
-            return true
+        if (collapsed.size == 1) {
+            val (inputNode, multiplier) = collapsed.single()
+            if (inputNode.size == 1) {
+                val only = inputNode.single()
+                val consumes = listOf(NodeAmount(only.node, only.amount * multiplier))
+                addConversionInternal(id, consumes, produces, creditsOf(consumes), loopGuardKey, collector)
+                return true
+            }
         }
 
         val suffixWidth = combinationCount.toString().length
@@ -84,14 +84,14 @@ object NeoRecipeConversionSupport {
                         )
                     }
                 val consumes = selected.toList()
-                addConversion(conversionId, consumes, produces, creditsOf(consumes), loopGuardKey, collector)
+                addConversionInternal(conversionId, consumes, produces, creditsOf(consumes), loopGuardKey, collector)
                 index++
                 return
             }
 
-            val (alternatives, multiplier) = collapsed[depth]
-            for (alternative in alternatives) {
-                selected += NodeAmount(alternative.node, alternative.amount * multiplier)
+            val (inputNode, multiplier) = collapsed[depth]
+            for (choice in inputNode) {
+                selected += NodeAmount(choice.node, choice.amount * multiplier)
                 visit(depth + 1, selected)
                 selected.removeAt(selected.lastIndex)
             }
@@ -101,53 +101,38 @@ object NeoRecipeConversionSupport {
         return true
     }
 
-    fun ingredientToAlternativeMatterAmounts(
+    fun ingredientToInputNode(
         ingredient: Ingredient,
         nodeOf: (ItemStack) -> NodeKey?,
-    ): List<NodeAmount> {
+    ): InputNodes {
         val key =
             ingredient.items
                 .joinToString("|") { stack ->
                     "${BuiltInRegistries.ITEM.getKey(stack.item)}#${stack.count.coerceAtLeast(1)}"
                 }
-        return ingredientAlternativesCache.getOrPut(key) {
+        return ingredientInputNodesCache.getOrPut(key) {
             ingredient.items
                 .mapNotNull { stack ->
                     val node = nodeOf(stack) ?: return@mapNotNull null
                     val amount = stack.count.coerceAtLeast(1)
                     NodeAmount(node, amount.toLong())
                 }
-                .let(::normalizeAlternatives)
+                .let(::InputNodes)
         }
     }
 
-    private fun normalizeAlternatives(alternatives: List<NodeAmount>): List<NodeAmount> =
-        alternatives
-            .groupBy { it.node }
-            .map { (node, amounts) ->
-                NodeAmount(node, amounts.minOf { it.amount })
-            }
-            .sortedBy { it.node }
-
-    private fun collapseEquivalentAlternatives(
-        alternatives: List<List<NodeAmount>>,
-    ): List<Pair<List<NodeAmount>, Long>> =
-        alternatives
-            .groupingBy(::alternativesSignature)
+    private fun collapseEquivalentInputs(
+        inputs: List<InputNodes>,
+    ): List<Pair<InputNodes, Long>> =
+        inputs
+            .groupingBy { it }
             .eachCount()
-            .map { (signature, count) ->
-                val representative =
-                    alternatives.first { candidate ->
-                        alternativesSignature(candidate) == signature
-                    }
-                representative to count.toLong()
-            }
-            .sortedBy { (candidate, _) ->
-                candidate.joinToString("|") { "${it.node}:${it.amount}" }
-            }
+            .map { (input, count) -> input to count.toLong() }
+            .sortedBy { (candidate, _) -> candidate.signature }
 
-    private fun alternativesSignature(alternatives: List<NodeAmount>): String =
-        alternatives.joinToString("|") { "${it.node}:${it.amount}" }
+    fun invalidateCache() {
+        ingredientInputNodesCache.clear()
+    }
 
     fun ResourceLocation.toLite(): LiteResourceLocation =
         LiteResourceLocation.of(namespace, path)

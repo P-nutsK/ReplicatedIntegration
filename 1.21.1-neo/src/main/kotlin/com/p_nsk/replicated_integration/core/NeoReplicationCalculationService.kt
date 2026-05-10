@@ -52,6 +52,7 @@ object NeoReplicationCalculationService {
     }
 
     fun prepareSnapshot(server: MinecraftServer): NeoCalculationSnapshot {
+        NeoRecipeConversionSupport.invalidateCache()
         val context =
             NeoReplicationAddonContext(
                 recipeManager = server.recipeManager,

@@ -1,6 +1,7 @@
 package com.p_nsk.replicated_integration.adapter.mekanism
 
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
+import com.p_nsk.replicated_integration.api.model.InputNodes
 import com.p_nsk.replicated_integration.api.model.NodeAmount
 import com.p_nsk.replicated_integration.api.graph.RecipeConversionMapper
 import com.p_nsk.replicated_integration.adapter.vanilla.BuiltinNodeResolver
@@ -37,20 +38,20 @@ object MekanismRecipeMappers {
     val all: List<RecipeConversionMapper<RecipeHolder<*>>> =
         listOf(
             singleOutput<ItemStackToItemStackRecipe> { holder ->
-                build(holder.id, listOf(holder.value.input.toAlternativeMatterAmounts()), holder.value.outputDefinition.singleMatterAmountOrNull(BuiltinNodeResolver::itemAmount))
+                build(holder.id, listOf(holder.value.input.toInputNode()), holder.value.outputDefinition.singleMatterAmountOrNull(BuiltinNodeResolver::itemAmount))
             },
             singleOutput<ItemStackToChemicalRecipe> { holder ->
-                build(holder.id, listOf(holder.value.input.toAlternativeMatterAmounts()), holder.value.outputDefinition.singleMatterAmountOrNull(MekanismNodeResolver::chemicalAmount))
+                build(holder.id, listOf(holder.value.input.toInputNode()), holder.value.outputDefinition.singleMatterAmountOrNull(MekanismNodeResolver::chemicalAmount))
             },
             singleOutput<ChemicalToChemicalRecipe> { holder ->
-                build(holder.id, listOf(holder.value.input.toAlternativeMatterAmounts()), holder.value.outputDefinition.singleMatterAmountOrNull(MekanismNodeResolver::chemicalAmount))
+                build(holder.id, listOf(holder.value.input.toInputNode()), holder.value.outputDefinition.singleMatterAmountOrNull(MekanismNodeResolver::chemicalAmount))
             },
             singleOutput<ChemicalChemicalToChemicalRecipe> { holder ->
                 build(
                     holder.id,
                     listOf(
-                        holder.value.leftInput.toAlternativeMatterAmounts(),
-                        holder.value.rightInput.toAlternativeMatterAmounts(),
+                        holder.value.leftInput.toInputNode(),
+                        holder.value.rightInput.toInputNode(),
                     ),
                     holder.value.outputDefinition.singleMatterAmountOrNull(MekanismNodeResolver::chemicalAmount),
                 )
@@ -59,8 +60,8 @@ object MekanismRecipeMappers {
                 build(
                     holder.id,
                     listOf(
-                        holder.value.itemInput.toAlternativeMatterAmounts(),
-                        holder.value.chemicalInput.toAlternativeMatterAmounts(holder.chemicalAmountScale()),
+                        holder.value.itemInput.toInputNode(),
+                        holder.value.chemicalInput.toInputNode(holder.chemicalAmountScale()),
                     ),
                     holder.value.outputDefinition.singleMatterAmountOrNull(BuiltinNodeResolver::itemAmount),
                 )
@@ -69,21 +70,21 @@ object MekanismRecipeMappers {
                 build(
                     holder.id,
                     listOf(
-                        holder.value.fluidInput.toAlternativeMatterAmounts(),
-                        holder.value.chemicalInput.toAlternativeMatterAmounts(),
+                        holder.value.fluidInput.toInputNode(),
+                        holder.value.chemicalInput.toInputNode(),
                     ),
                     holder.value.outputDefinition.singleMatterAmountOrNull(MekanismNodeResolver::chemicalAmount),
                 )
             },
             singleOutput<ChemicalCrystallizerRecipe> { holder ->
-                build(holder.id, listOf(holder.value.input.toAlternativeMatterAmounts()), holder.value.outputDefinition.singleMatterAmountOrNull(BuiltinNodeResolver::itemAmount))
+                build(holder.id, listOf(holder.value.input.toInputNode()), holder.value.outputDefinition.singleMatterAmountOrNull(BuiltinNodeResolver::itemAmount))
             },
             singleOutput<ChemicalDissolutionRecipe> { holder ->
                 build(
                     holder.id,
                     listOf(
-                        holder.value.itemInput.toAlternativeMatterAmounts(),
-                        holder.value.chemicalInput.toAlternativeMatterAmounts(),
+                        holder.value.itemInput.toInputNode(),
+                        holder.value.chemicalInput.toInputNode(),
                     ),
                     holder.value.outputDefinition.singleOrNull()?.let(MekanismNodeResolver::chemicalAmount),
                 )
@@ -92,14 +93,14 @@ object MekanismRecipeMappers {
                 build(
                     holder.id,
                     listOf(
-                        holder.value.mainInput.toAlternativeMatterAmounts(),
-                        holder.value.extraInput.toAlternativeMatterAmounts(),
+                        holder.value.mainInput.toInputNode(),
+                        holder.value.extraInput.toInputNode(),
                     ),
                     holder.value.outputDefinition.singleMatterAmountOrNull(BuiltinNodeResolver::itemAmount),
                 )
             },
             singleOutput<FluidToFluidRecipe> { holder ->
-                build(holder.id, listOf(holder.value.input.toAlternativeMatterAmounts()), holder.value.outputDefinition.singleMatterAmountOrNull(BuiltinNodeResolver::fluidAmount))
+                build(holder.id, listOf(holder.value.input.toInputNode()), holder.value.outputDefinition.singleMatterAmountOrNull(BuiltinNodeResolver::fluidAmount))
             },
             object : RecipeConversionMapper<RecipeHolder<*>> {
                 override fun supports(recipe: Any): Boolean = recipe is RecipeHolder<*> && recipe.value is RotaryRecipe
@@ -111,9 +112,9 @@ object MekanismRecipeMappers {
                     if (rotary.hasFluidToChemical()) {
                         val output = rotary.chemicalOutputDefinition.singleMatterAmountOrNull(MekanismNodeResolver::chemicalAmount)
                         if (output != null) {
-                            NeoRecipeConversionSupport.addConversionsForAlternatives(
+                            NeoRecipeConversionSupport.addConversion(
                                 id = holder.id.withSuffix("fluid_to_chemical"),
-                                consumeAlternatives = listOf(rotary.fluidInput.toAlternativeMatterAmounts()),
+                                consumeInputNodes = listOf(rotary.fluidInput.toInputNode()),
                                 produces = output,
                                 loopGuardKey = loopGuardKey,
                                 collector = collector,
@@ -123,9 +124,9 @@ object MekanismRecipeMappers {
                     if (rotary.hasChemicalToFluid()) {
                         val output = rotary.fluidOutputDefinition.singleMatterAmountOrNull(BuiltinNodeResolver::fluidAmount)
                         if (output != null) {
-                            NeoRecipeConversionSupport.addConversionsForAlternatives(
+                            NeoRecipeConversionSupport.addConversion(
                                 id = holder.id.withSuffix("chemical_to_fluid"),
-                                consumeAlternatives = listOf(rotary.chemicalInput.toAlternativeMatterAmounts()),
+                                consumeInputNodes = listOf(rotary.chemicalInput.toInputNode()),
                                 produces = output,
                                 loopGuardKey = loopGuardKey,
                                 collector = collector,
@@ -140,22 +141,22 @@ object MekanismRecipeMappers {
                 override fun collect(recipe: RecipeHolder<*>, collector: IConversionSink) {
                     val holder = recipe as RecipeHolder<ElectrolysisRecipe>
                     val output = holder.value.outputDefinition.singleOrNull() ?: return
-                    val consumeAlternatives = listOf(holder.value.input.toAlternativeMatterAmounts())
+                    val consumeInputNodes = listOf(holder.value.input.toInputNode())
                     val left = MekanismNodeResolver.chemicalAmount(output.left)
                     val right = MekanismNodeResolver.chemicalAmount(output.right)
                     if (left != null) {
-                        NeoRecipeConversionSupport.addConversionsForAlternatives(
+                        NeoRecipeConversionSupport.addConversion(
                             id = holder.id.withSuffix("left"),
-                            consumeAlternatives = consumeAlternatives,
+                            consumeInputNodes = consumeInputNodes,
                             produces = left,
                             creditsOf = { listOfNotNull(right) },
                             collector = collector,
                         )
                     }
                     if (right != null) {
-                        NeoRecipeConversionSupport.addConversionsForAlternatives(
+                        NeoRecipeConversionSupport.addConversion(
                             id = holder.id.withSuffix("right"),
-                            consumeAlternatives = consumeAlternatives,
+                            consumeInputNodes = consumeInputNodes,
                             produces = right,
                             creditsOf = { listOfNotNull(left) },
                             collector = collector,
@@ -169,27 +170,27 @@ object MekanismRecipeMappers {
                 override fun collect(recipe: RecipeHolder<*>, collector: IConversionSink) {
                     val holder = recipe as RecipeHolder<PressurizedReactionRecipe>
                     val output = holder.value.outputDefinition.singleOrNull() ?: return
-                    val consumeAlternatives =
+                    val consumeInputNodes =
                         listOf(
-                            holder.value.inputSolid.toAlternativeMatterAmounts(),
-                            holder.value.inputFluid.toAlternativeMatterAmounts(),
-                            holder.value.inputChemical.toAlternativeMatterAmounts(),
+                            holder.value.inputSolid.toInputNode(),
+                            holder.value.inputFluid.toInputNode(),
+                            holder.value.inputChemical.toInputNode(),
                         )
                     val item = BuiltinNodeResolver.itemAmount(output.item)
                     val chemical = MekanismNodeResolver.chemicalAmount(output.chemical)
                     if (item != null) {
-                        NeoRecipeConversionSupport.addConversionsForAlternatives(
+                        NeoRecipeConversionSupport.addConversion(
                             id = holder.id.withSuffix("item"),
-                            consumeAlternatives = consumeAlternatives,
+                            consumeInputNodes = consumeInputNodes,
                             produces = item,
                             creditsOf = { listOfNotNull(chemical) },
                             collector = collector,
                         )
                     }
                     if (chemical != null) {
-                        NeoRecipeConversionSupport.addConversionsForAlternatives(
+                        NeoRecipeConversionSupport.addConversion(
                             id = holder.id.withSuffix("chemical"),
-                            consumeAlternatives = consumeAlternatives,
+                            consumeInputNodes = consumeInputNodes,
                             produces = chemical,
                             creditsOf = { listOfNotNull(item) },
                             collector = collector,
@@ -201,10 +202,10 @@ object MekanismRecipeMappers {
 
     private fun build(
         id: ResourceLocation,
-        consumeAlternatives: List<List<NodeAmount>>,
+        consumeInputNodes: List<InputNodes>,
         produces: NodeAmount?,
     ): ConversionInputs? =
-        produces?.let { ConversionInputs(id, consumeAlternatives, it) }
+        produces?.let { ConversionInputs(id, consumeInputNodes, it) }
 
     private inline fun <reified R : Recipe<*>> singleOutput(
         crossinline extractor: (RecipeHolder<R>) -> ConversionInputs?,
@@ -215,9 +216,9 @@ object MekanismRecipeMappers {
             @Suppress("UNCHECKED_CAST")
             override fun collect(recipe: RecipeHolder<*>, collector: IConversionSink) {
                 val inputs = extractor(recipe as RecipeHolder<R>) ?: return
-                NeoRecipeConversionSupport.addConversionsForAlternatives(
+                NeoRecipeConversionSupport.addConversion(
                     id = inputs.id,
-                    consumeAlternatives = inputs.consumeAlternatives,
+                    consumeInputNodes = inputs.consumeInputNodes,
                     produces = inputs.produces,
                     creditsOf = inputs.creditsOf,
                     collector = collector,
@@ -225,31 +226,31 @@ object MekanismRecipeMappers {
             }
         }
 
-    private fun ItemStackIngredient.toAlternativeMatterAmounts(): List<NodeAmount> =
-        ingredientToAlternativeMatterAmounts(
+    private fun ItemStackIngredient.toInputNode(): InputNodes =
+        ingredientToInputNode(
             ingredient = this as InputIngredient<ItemStack>,
             nodeOf = BuiltinNodeResolver::itemNode,
         )
 
-    private fun FluidStackIngredient.toAlternativeMatterAmounts(): List<NodeAmount> =
-        ingredientToAlternativeMatterAmounts(
+    private fun FluidStackIngredient.toInputNode(): InputNodes =
+        ingredientToInputNode(
             ingredient = this as InputIngredient<FluidStack>,
             nodeOf = BuiltinNodeResolver::fluidNode,
         )
 
     @Suppress("UNCHECKED_CAST")
-    private fun ChemicalStackIngredient.toAlternativeMatterAmounts(scale: Long = 1L): List<NodeAmount> =
-        ingredientToAlternativeMatterAmounts(
+    private fun ChemicalStackIngredient.toInputNode(scale: Long = 1L): InputNodes =
+        ingredientToInputNode(
             ingredient = this as InputIngredient<ChemicalStack>,
             nodeOf = MekanismNodeResolver::chemicalNode,
             scale = scale,
         )
 
-    private fun <T> ingredientToAlternativeMatterAmounts(
+    private fun <T> ingredientToInputNode(
         ingredient: InputIngredient<T>,
         nodeOf: (T) -> NodeKey?,
         scale: Long = 1L,
-    ): List<NodeAmount> =
+    ): InputNodes =
         ingredient.representations.mapNotNull { representation ->
             val node = nodeOf(representation) ?: return@mapNotNull null
             val needed = ingredient.getNeededAmount(representation) * scale
@@ -258,7 +259,7 @@ object MekanismRecipeMappers {
             } else {
                 NodeAmount(node, needed)
             }
-        }
+        }.let(::InputNodes)
 
     private fun RecipeHolder<ItemStackChemicalToItemStackRecipe>.chemicalAmountScale(): Long =
         if (value.type == MekanismRecipeTypes.TYPE_COMPRESSING.value()) {
@@ -278,7 +279,7 @@ object MekanismRecipeMappers {
 
     private data class ConversionInputs(
         val id: ResourceLocation,
-        val consumeAlternatives: List<List<NodeAmount>>,
+        val consumeInputNodes: List<InputNodes>,
         val produces: NodeAmount,
         val creditsOf: (List<NodeAmount>) -> List<NodeAmount> = { emptyList() },
     )

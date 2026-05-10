@@ -8,6 +8,7 @@ import com.p_nsk.replicated_integration.api.addon.ReplicationAddonLoadSafetyCont
 import com.p_nsk.replicated_integration.api.graph.IConversionSink
 import com.p_nsk.replicated_integration.api.graph.RecipeConversionMapper
 import com.p_nsk.replicated_integration.api.model.ExplicitMatterSource
+import com.p_nsk.replicated_integration.api.model.InputNodes
 import com.p_nsk.replicated_integration.api.model.LiteMatterCompound
 import com.p_nsk.replicated_integration.api.model.LiteResourceLocation
 import com.p_nsk.replicated_integration.api.model.NodeAmount
@@ -125,8 +126,8 @@ object ReplicationVanillaAddon : NeoReplicationAddon {
         }
     }
 
-    private fun Ingredient.toAlternativeMatterAmounts(): List<NodeAmount> =
-        NeoRecipeConversionSupport.ingredientToAlternativeMatterAmounts(this, BuiltinNodeResolver::itemNode)
+    private fun Ingredient.toInputNode(): InputNodes =
+        NeoRecipeConversionSupport.ingredientToInputNode(this, BuiltinNodeResolver::itemNode)
 
     private fun ItemStack.toItemMatterAmount(): NodeAmount? =
         BuiltinNodeResolver.itemAmount(this)
@@ -156,7 +157,7 @@ object ReplicationVanillaAddon : NeoReplicationAddon {
                     holder.id,
                     holder.value.ingredients
                         .filterNot(Ingredient::isEmpty)
-                        .map { it.toAlternativeMatterAmounts() },
+                        .map { it.toInputNode() },
                     output,
                     ::craftingCredits,
                 )
@@ -166,7 +167,7 @@ object ReplicationVanillaAddon : NeoReplicationAddon {
                     holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
                 ConversionInputs(
                     holder.id,
-                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    listOf(holder.value.ingredients.firstOrNull()?.toInputNode() ?: InputNodes.empty()),
                     output
                 )
             },
@@ -175,7 +176,7 @@ object ReplicationVanillaAddon : NeoReplicationAddon {
                     holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
                 ConversionInputs(
                     holder.id,
-                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    listOf(holder.value.ingredients.firstOrNull()?.toInputNode() ?: InputNodes.empty()),
                     output
                 )
             },
@@ -184,7 +185,7 @@ object ReplicationVanillaAddon : NeoReplicationAddon {
                     holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
                 ConversionInputs(
                     holder.id,
-                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    listOf(holder.value.ingredients.firstOrNull()?.toInputNode() ?: InputNodes.empty()),
                     output
                 )
             },
@@ -193,7 +194,7 @@ object ReplicationVanillaAddon : NeoReplicationAddon {
                     holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
                 ConversionInputs(
                     holder.id,
-                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    listOf(holder.value.ingredients.firstOrNull()?.toInputNode() ?: InputNodes.empty()),
                     output
                 )
             },
@@ -202,7 +203,7 @@ object ReplicationVanillaAddon : NeoReplicationAddon {
                     holder.value.getResultItem(registryAccess).toItemMatterAmount() ?: return@singleOutputMapper null
                 ConversionInputs(
                     holder.id,
-                    listOf(holder.value.ingredients.firstOrNull()?.toAlternativeMatterAmounts().orEmpty()),
+                    listOf(holder.value.ingredients.firstOrNull()?.toInputNode() ?: InputNodes.empty()),
                     output
                 )
             },
@@ -239,9 +240,9 @@ object ReplicationVanillaAddon : NeoReplicationAddon {
             @Suppress("UNCHECKED_CAST")
             override fun collect(recipe: RecipeHolder<*>, collector: IConversionSink) {
                 val inputs = context.extractor(recipe as RecipeHolder<R>) ?: return
-                NeoRecipeConversionSupport.addConversionsForAlternatives(
+                NeoRecipeConversionSupport.addConversion(
                     id = inputs.id,
-                    consumeAlternatives = inputs.consumeAlternatives,
+                    consumeInputNodes = inputs.consumeInputNodes,
                     produces = inputs.produces,
                     creditsOf = inputs.creditsOf,
                     collector = collector,
@@ -275,7 +276,7 @@ object ReplicationVanillaAddon : NeoReplicationAddon {
 
     private data class ConversionInputs(
         val id: ResourceLocation,
-        val consumeAlternatives: List<List<NodeAmount>>,
+        val consumeInputNodes: List<InputNodes>,
         val produces: NodeAmount,
         val creditsOf: (List<NodeAmount>) -> List<NodeAmount> = { emptyList() },
     )

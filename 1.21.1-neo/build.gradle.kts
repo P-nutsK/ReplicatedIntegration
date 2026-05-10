@@ -13,9 +13,12 @@ dependencies {
     implementation(libs.titanium.mc1211)
     implementation(libs.replication.mc1211)
     implementation(libs.ae2.mc1211)
+    implementation(libs.aae.mc1211)
+    implementation(libs.draconic.evolution.mc1211)
 
     // depend (optional)
     compileOnly(mekclassifier("api"))
+    compileOnly(libs.ae2addonlib.mc1211)
 
     // for develop
     runtimeOnly(libs.mekanism.mc1211)
@@ -24,6 +27,10 @@ dependencies {
     runtimeOnly(mekclassifier("generators"))
 
     runtimeOnly(mekclassifier("tools"))
+    runtimeOnly(libs.geckolib.mc1211)
+    runtimeOnly(libs.brandonscore.mc1211)
+    runtimeOnly(libs.codechickenlib.mc1211)
+    runtimeOnly(libs.curios.mc1211)
     // ↓どこかに勝手にJEIを入れてる野蛮なmodがある.
 //    runtimeOnly(libs.tmrv.mc1211)
     runtimeOnly(libs.emi.mc1211)

@@ -1,9 +1,11 @@
 package com.p_nsk.replicated_integration
 
 import com.p_nsk.replicated_integration.command.MatterCommand
+import com.p_nsk.replicated_integration.command.MatterNodeDebugCommand
 import com.p_nsk.replicated_integration.config.NeoCompatibilityConfig
 import com.p_nsk.replicated_integration.core.NeoBuiltinReplicationAddons
 import com.p_nsk.replicated_integration.data.ReplicationReloadHooks
+import com.p_nsk.replicated_integration.data.NeoReplicatedIntegrationDataGen
 import com.p_nsk.replicated_integration.data.ReplicationServerLifecycleHooks
 import com.p_nsk.replicated_integration.network.NeoReplicationCalculationSyncChannel
 import net.neoforged.fml.ModLoadingContext
@@ -19,6 +21,7 @@ object ModMain {
         registerNetwork()
         NeoForge.EVENT_BUS.register(NeoBuiltinReplicationAddons)
         NeoForge.EVENT_BUS.register(MatterCommand)
+        NeoForge.EVENT_BUS.register(MatterNodeDebugCommand)
         NeoForge.EVENT_BUS.register(ReplicationReloadHooks)
         NeoForge.EVENT_BUS.register(ReplicationServerLifecycleHooks)
     }
@@ -32,7 +35,9 @@ object ModMain {
     }
 
     private fun registerNetwork() {
-        requireNotNull(ModLoadingContext.get().activeContainer.eventBus).addListener(::onRegisterPayloadHandlers)
+        val eventBus = requireNotNull(ModLoadingContext.get().activeContainer.eventBus)
+        eventBus.addListener(::onRegisterPayloadHandlers)
+        eventBus.addListener(NeoReplicatedIntegrationDataGen::gatherData)
     }
 
     private fun onRegisterPayloadHandlers(event: RegisterPayloadHandlersEvent) {
